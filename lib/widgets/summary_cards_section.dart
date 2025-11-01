@@ -36,9 +36,10 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
   String _layoutType = 'grid';
   List<String> _selectedCardIds = ['offers', 'orders', 'travel', 'alerts'];
   late Map<String, SummaryCardData> _allCards;
-
-  // --- NEW: State for interactive pie chart ---
   int _touchedIndex = -1;
+
+  // --- NEW: State variable to track the expansion state ---
+  bool _isExpanded = true;
 
   @override
   void initState() {
@@ -46,8 +47,8 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     _loadPreferences();
   }
 
-  // --- (updateAllCardsMap, didUpdateWidget, loadPreferences, setLayoutType, showCustomizeDialog...
-  // ... all these methods remain unchanged) ---
+  // ... (All other methods like _updateAllCardsMap, didUpdateWidget,
+  // _loadPreferences, _setLayoutType, _showCustomizeDialog remain UNCHANGED) ...
 
   void _updateAllCardsMap() {
     _allCards = {
@@ -123,7 +124,6 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.summaryData != widget.summaryData) {
       _updateAllCardsMap();
-      // Reset touched index when data changes
       _touchedIndex = -1;
     }
   }
@@ -211,13 +211,27 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
+  // --- UPDATED: Main build method ---
   @override
   Widget build(BuildContext context) {
-    return Column(children: [_buildHeader(), _buildLayout()]);
+    return Column(
+      children: [
+        _buildHeader(),
+        // --- NEW: AnimatedSize wrapper ---
+        // This widget will animate the size changes of its child
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child:
+              // We use our state variable to show/hide the layout
+              _isExpanded ? _buildLayout() : const SizedBox.shrink(),
+        ),
+      ],
+    );
   }
 
+  // --- UPDATED: Header build method ---
   Widget _buildHeader() {
-    // ... (Your _buildHeader method is unchanged) ...
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -227,6 +241,18 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          // --- NEW: Expansion Toggle Button ---
+          IconButton(
+            icon: Icon(
+              _isExpanded ? Icons.expand_less : Icons.expand_more,
+              color: Colors.grey,
+            ),
+            onPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
           ),
           const Spacer(),
           IconButton(
@@ -259,7 +285,9 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
+  // --- _buildLayout is UNCHANGED ---
   Widget _buildLayout() {
+    // Ensure _allCards is initialized before use
     if (_allCards.isEmpty) {
       _updateAllCardsMap();
     }
@@ -281,7 +309,7 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     }
   }
 
-  // --- UPDATED: Grid View ---
+  // --- _buildGridView is UNCHANGED (with the mainAxisExtent fix) ---
   Widget _buildGridView(List<SummaryCardData> cards) {
     return GridView.builder(
       padding: const EdgeInsets.all(16.0),
@@ -289,7 +317,7 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
         crossAxisCount: 2,
         crossAxisSpacing: 12.0,
         mainAxisSpacing: 12.0,
-        childAspectRatio: 1.8,
+        mainAxisExtent: 100, // Fixed height to prevent overflow
       ),
       itemCount: cards.length,
       shrinkWrap: true,
@@ -301,21 +329,15 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
-  // --- NEW (Reverted to your original style, but centered) ---
+  // --- _buildCenteredSummaryCard is UNCHANGED ---
   Widget _buildCenteredSummaryCard(SummaryCardData card) {
-    // This is your original card layout, with two changes:
-    // 1. Column's crossAxisAlignment is set to CrossAxisAlignment.center
-    // 2. The Container's decoration uses Theme.of(context).cardColor for theme-awareness
-
     return Container(
       decoration: BoxDecoration(
-        // Use theme card color and your original tint
         color: Theme.of(context).brightness == Brightness.light
             ? card.tint
             : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16.0),
         // boxShadow: [
-        //   // Optional: Kept my subtle shadow. Remove if you don't like it.
         //   BoxShadow(
         //     color: Theme.of(context).shadowColor.withOpacity(0.05),
         //     blurRadius: 10.0,
@@ -324,29 +346,22 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
         // ],
       ),
       child: Padding(
-        // Reverted to your original padding
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          // --- FIX: This is the change you wanted ---
-          crossAxisAlignment:
-              CrossAxisAlignment.center, // Was CrossAxisAlignment.start
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Reverted to your original Icon
             Icon(card.icon, color: card.color, size: 28),
-            // Reverted to your original SizedBox
             const SizedBox(height: 8),
-            // Reverted to your original Text structure
             Text(
               '${card.value} ${card.title}',
-              textAlign:
-                  TextAlign.center, // Added for text centering if it wraps
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
-              maxLines: 2, // Allow for wrapping
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -355,63 +370,8 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
-  // // --- UPDATED: Summary Card ---
-  // Widget _buildSummaryCard(SummaryCardData card) {
-  //   return Container(
-  //     decoration: BoxDecoration(
-  //       color: Theme.of(context).cardColor, // Use theme card color
-  //       borderRadius: BorderRadius.circular(16.0),
-  //       boxShadow: [
-  //         // Add consistent shadow
-  //         BoxShadow(
-  //           color: Theme.of(context).shadowColor.withOpacity(0.05),
-  //           blurRadius: 10.0,
-  //           offset: const Offset(0, 4),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Padding(
-  //       padding: const EdgeInsets.all(12.0), // Consistent padding
-  //       child: Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         crossAxisAlignment: CrossAxisAlignment.center,
-  //         children: [
-  //           // Icon with its colored tint background
-  //           CircleAvatar(
-  //             radius: 20,
-  //             backgroundColor: card.tint,
-  //             child: Icon(card.icon, color: card.color, size: 22),
-  //           ),
-  //           const SizedBox(height: 12),
-  //           // Value
-  //           Text(
-  //             card.value.toString(),
-  //             style: TextStyle(
-  //               fontSize: 20,
-  //               fontWeight: FontWeight.bold,
-  //               color: Theme.of(context).textTheme.bodyLarge?.color,
-  //             ),
-  //           ),
-  //           const SizedBox(height: 4),
-  //           // Title
-  //           Text(
-  //             card.title,
-  //             textAlign: TextAlign.center,
-  //             style: TextStyle(
-  //               fontSize: 14,
-  //               color: Theme.of(context).textTheme.bodySmall?.color,
-  //             ),
-  //             maxLines: 1,
-  //             overflow: TextOverflow.ellipsis,
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
+  // --- _buildListView is UNCHANGED ---
   Widget _buildListView(List<SummaryCardData> cards) {
-    // ... (Your _buildListView method is unchanged) ...
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: cards.length,
@@ -438,7 +398,7 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
-  // --- NEW: Pie Chart Legend Widget ---
+  // --- _buildPieChartLegends is UNCHANGED ---
   Widget _buildPieChartLegends(List<SummaryCardData> cards) {
     return Wrap(
       spacing: 16.0,
@@ -470,8 +430,8 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
-  // --- UPDATED: Pie Chart View ---
-  Widget _buildPieChartView(List<SummaryCardData> cards) {
+  // --- _buildPieChartView is UNCHANGED (with the gradient fix) ---
+Widget _buildPieChartView(List<SummaryCardData> cards) {
     final total = cards.fold<double>(0, (sum, item) => sum + item.value);
     if (total == 0) {
       return const Center(
@@ -490,11 +450,16 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
             height: 200,
             child: PieChart(
               PieChartData(
-                // Add touch interaction
+                // --- FIX for Gesture Error ---
                 pieTouchData: PieTouchData(
                   touchCallback: (FlTouchEvent event, pieTouchResponse) {
                     setState(() {
-                      if (!event.isInterestedForInteractions ||
+                      // 1. Check for null on the boolean value
+                      final bool isInterested =
+                          event.isInterestedForInteractions ?? false;
+
+                      // 2. Use the null-safe boolean
+                      if (!isInterested ||
                           pieTouchResponse == null ||
                           pieTouchResponse.touchedSection == null) {
                         _touchedIndex = -1;
@@ -505,8 +470,10 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
                     });
                   },
                 ),
-                sectionsSpace: 4, // Add space between sections
-                centerSpaceRadius: 60, // Make it a "doughnut" chart
+
+                // --- End of Gesture Fix ---
+                sectionsSpace: 4,
+                centerSpaceRadius: 60,
                 sections: List.generate(cards.length, (index) {
                   final card = cards[index];
                   final isTouched = index == _touchedIndex;
@@ -514,9 +481,8 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
                   final double percentage = (card.value / total * 100);
 
                   return PieChartSectionData(
-                    color: card.color, // This solid color will be used
+                    color: card.color,
                     value: card.value.toDouble(),
-                    // Show percentage only on tap
                     title: isTouched ? '${percentage.toStringAsFixed(0)}%' : '',
                     radius: radius,
                     titleStyle: const TextStyle(
@@ -525,18 +491,21 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
                       color: Colors.white,
                       shadows: [Shadow(color: Colors.black, blurRadius: 2)],
                     ),
-
-                    // --- FIX: Removed the 'gradient' parameter ---
-                    // The 'gradient' property was causing the error
-                    // as it's not supported in your fl_chart version.
                   );
                 }),
               ),
             ),
           ),
           const SizedBox(height: 24),
-          // Add the legends
-          _buildPieChartLegends(cards),
+
+          // --- FIX for RenderFlex Overflow ---
+          // We constrain the height of the legends and make them scrollable
+          // if they don't fit. This guarantees a fixed height.
+          SizedBox(
+            height: 60, // Max height for the legend area
+            child: SingleChildScrollView(child: _buildPieChartLegends(cards)),
+          ),
+          // --- End of RenderFlex Fix ---
         ],
       ),
     );

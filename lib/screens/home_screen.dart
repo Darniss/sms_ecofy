@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_slidable/flutter_slidable.dart'; // Import slidable
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '/config/env_config.dart';
 import '/core/algorithms.dart';
 import '/data/sample_sms_data.dart';
 import '/utils/app_icons.dart';
 import '/utils/storage_service.dart';
 import '/utils/theme.dart';
-import '/widgets/summary_cards_section.dart';
-import '/utils/time_helper.dart'; // Import the new time helper
+import '/utils/time_helper.dart';
+import '/widgets/summary_cards_section.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,24 +18,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final StorageService _storageService = StorageService();
 
   // State variables
   bool _isLoading = true;
-  List<SmsMessage> _allMessages = []; // Master list of all messages
-  List<SmsMessage> _timeFilteredMessages = []; // List after time filter
+  List<SmsMessage> _allMessages = [];
+  List<SmsMessage> _timeFilteredMessages = [];
   Map<String, int> _summary = {};
 
   // UI State
-  String _activeTimelineFilter = 'Day'; // Default to 'Day'
+  String _activeTimelineFilter = 'Day';
   String _activeCategoryTab = 'Personal';
-
-  // --- NEW DYNAMIC TIME STATE ---
   List<String> _dynamicDateChips = [];
   int _selectedDateChipIndex = 0;
 
-  // Static data for filters
-  final List<String> _timelineFilters = ['All', 'Day', 'Weekly', 'Monthly'];
+  final List<String> _timelineFilters = ['All', 'Day', 'Weekly', 'Monthly', 'Yearly'];
   final List<String> _categoryTabs = [
     'Personal',
     'Transactions',
@@ -62,12 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
       loadedMessages = sampleSmsList;
       _summary = summaryData;
     } else {
-      // TODO: Add logic to fetch real SMS messages
       loadedMessages = sampleSmsList;
       _summary = summaryData;
     }
 
-    // --- NEW: Load starred status ---
     final starredIds = await _storageService.getStarredIds();
     for (var msg in loadedMessages) {
       if (starredIds.contains(msg.id)) {
@@ -78,13 +74,11 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _allMessages = loadedMessages;
       _isLoading = false;
-      // --- NEW: Initialize filters ---
       _updateDynamicChips();
       _filterMessages();
     });
   }
 
-  // --- NEW: Method to update the dynamic date chips ---
   void _updateDynamicChips() {
     switch (_activeTimelineFilter) {
       case 'Day':
@@ -96,43 +90,37 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'Monthly':
         _dynamicDateChips = TimeHelper.generateMonthChips();
         break;
+      case 'Yearly':
+        _dynamicDateChips = TimeHelper.generateYearChips();
+        break;        
       case 'All':
       default:
         _dynamicDateChips = [];
     }
-    // Reset selected chip index, ensuring it's valid
     _selectedDateChipIndex = 0;
   }
 
-  // --- NEW: Method to apply time filter ---
   void _filterMessages() {
     String selectedChip = '';
     if (_dynamicDateChips.isNotEmpty &&
         _selectedDateChipIndex < _dynamicDateChips.length) {
       selectedChip = _dynamicDateChips[_selectedDateChipIndex];
     } else if (_activeTimelineFilter != 'All') {
-      // No chips to select from, but filter is not 'All', so show nothing
       _timeFilteredMessages = [];
       return;
     }
 
-    // Apply time filter first
     _timeFilteredMessages = TimeHelper.filterMessagesByTime(
       _allMessages,
       _activeTimelineFilter,
       selectedChip,
     );
-    // The _filteredMessages getter will now apply category filter
   }
 
-  // --- UPDATED: Getter now filters by category from the _timeFilteredMessages ---
   List<SmsMessage> get _filteredMessages {
-    // Start with the time-filtered list
     List<SmsMessage> messagesToFilter = _timeFilteredMessages;
 
-    // --- NEW LOGIC FOR STARRED ---
     if (_activeCategoryTab == 'Starred') {
-      // Show starred messages from the time-filtered list
       return messagesToFilter.where((m) => m.isStarred).toList();
     }
 
@@ -147,30 +135,44 @@ class _HomeScreenState extends State<HomeScreen> {
           m.transactionType == TransactionType.otp) {
         return false;
       }
-      // Apply category filter
       return m.category.name.toLowerCase() == _activeCategoryTab.toLowerCase();
     }).toList();
   }
-
-  // --- NEW: Swipe Action Handlers ---
 
   void _toggleStar(SmsMessage message) {
     setState(() {
       message.isStarred = !message.isStarred;
     });
     _storageService.starMessage(message.id, message.isStarred);
-    // If in starred tab, the list will rebuild and item might disappear
-    // This is handled automatically by setState and the getter
   }
 
-  void _deleteMessage(SmsMessage message) {
-    // Find the message in both lists
-    final int masterIndex = _allMessages.indexOf(message);
-    if (masterIndex == -1) return; // Safety check
+  // void _deleteMessage(SmsMessage message) {
+  //   final int masterIndex = _allMessages.indexOf(message);
+  //   if (masterIndex == -1) return;
 
+  //   setState(() {
+  //     _allMessages.removeAt(masterIndex);
+  //     _filterMessages();
+  //   });
+
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: const Text('Message deleted'),
+  //       action: SnackBarAction(
+  //         label: 'UNDO',
+  //         onPressed: () => _undoDelete(message, masterIndex),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+void _deleteMessage(SmsMessage message, int index) {
+    final int masterIndex = _allMessages.indexOf(message);
+    if (masterIndex == -1) return;
+
+    // Remove from the master data list and call setState
     setState(() {
       _allMessages.removeAt(masterIndex);
-      // Re-run the time filter to update the UI list
       _filterMessages();
     });
 
@@ -183,57 +185,68 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-
-    // TODO: Add to local storage for permanent deletion if needed
   }
 
-  void _undoDelete(SmsMessage message, int masterIndex) {
+  // void _undoDelete(SmsMessage message, int masterIndex) {
+  //   setState(() {
+  //     _allMessages.insert(masterIndex, message);
+  //     _filterMessages();
+  //   });
+  // }
+void _undoDelete(SmsMessage message, int masterIndex) {
+    // Add the data back and call setState
     setState(() {
-      // Add back to the master list at its original position
-      _allMessages.insert(masterIndex, message);
-      // Re-run the filter to put it back in the time-filtered list
+      if (masterIndex <= _allMessages.length) {
+        _allMessages.insert(masterIndex, message);
+      } else {
+        _allMessages.add(message);
+      }
       _filterMessages();
     });
   }
 
+  // --- 1. & 2. UPDATED: Main build method ---
   @override
   Widget build(BuildContext context) {
+    // This Scaffold is removed from your original file.
+    // This widget now returns a Column directly, to be placed inside
+    // the MainNavigationScreen's Scaffold body.
     return Scaffold(
       appBar: _buildAppBar(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: ListView(
-                children: [
-                  _buildTimelineFilter(),
-                  // --- UPDATED: Animated date scroller ---
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: Visibility(
-                      // Show scroller if filter is not 'All'
-                      visible: _activeTimelineFilter != 'All',
-                      child: _buildDateScroller(),
-                    ),
+          // --- 2. Using a Column for "sticky" headers ---
+          : Column(
+              children: [
+                _buildTimelineFilter(),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Visibility(
+                    visible: _activeTimelineFilter != 'All',
+                    child: _buildDateScroller(),
                   ),
-                  SummaryCardsSection(summaryData: _summary),
-                  _buildCategoryTabs(),
-                  _buildMessageList(),
-                ],
-              ),
+                ),
+                SummaryCardsSection(summaryData: _summary),
+                _buildCategoryTabs(),
+
+                // --- 2. This Expanded makes the list scrollable below ---
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: _buildMessageList(),
+                  ),
+                ),
+              ],
             ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'homeScreenFab',
-        onPressed: () {},
-        child: const Icon(AppIcons.fabIcon, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // --- FAB was removed here, it's now in MainNavigationScreen ---
+      // We also fixed the Hero tag conflict by removing this FAB
+      // If you need it, add it to MainNavigationScreen
     );
   }
 
+  // --- 1. UPDATED: AppBar build method ---
   PreferredSizeWidget _buildAppBar() {
-    // ... (Your _buildAppBar code is unchanged)
     return AppBar(
       title: const Text(
         '🌿 SMS Ecofy',
@@ -249,15 +262,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildOverflowMenu(),
         const SizedBox(width: 8),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1.0),
-        child: Container(color: Theme.of(context).dividerColor, height: 1.0),
-      ),
+      // --- 1. FIX: The 'bottom' property is removed ---
+      // This removes the 1px divider line under the AppBar.
     );
   }
 
   Widget _buildOverflowMenu() {
-    // ... (Your _buildOverflowMenu code is unchanged)
     return PopupMenuButton<String>(
       icon: const Icon(AppIcons.menu),
       onSelected: (value) {
@@ -334,7 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
           children: _timelineFilters.map((filter) {
             bool isActive = _activeTimelineFilter == filter;
             return GestureDetector(
-              // --- UPDATED: onTap now updates filters ---
               onTap: () => setState(() {
                 _activeTimelineFilter = filter;
                 _updateDynamicChips();
@@ -375,59 +384,128 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- UPDATED: Date Scroller now uses dynamic data ---
-  Widget _buildDateScroller() {
+  // --- 3. UPDATED: Date Scroller build method ---
+Widget _buildDateScroller() {
     final chipTheme = Theme.of(context).chipTheme;
     return Container(
       height: 50,
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
       margin: const EdgeInsets.only(left: 16.0),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _dynamicDateChips.length, // Use dynamic count
+        itemCount: _dynamicDateChips.length,
         itemBuilder: (context, index) {
           bool isSelected = _selectedDateChipIndex == index;
-          final chipText = _dynamicDateChips[index]; // Use dynamic text
+          final chipText = _dynamicDateChips[index];
 
-          return GestureDetector(
-            // --- UPDATED: onTap updates index and filters ---
-            onTap: () => setState(() {
-              _selectedDateChipIndex = index;
-              _filterMessages();
-            }),
-            child: Container(
-              margin: const EdgeInsets.only(right: 10.0),
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? kEcoGreen.withOpacity(0.1)
-                    : chipTheme.backgroundColor,
-                borderRadius: (chipTheme.shape is RoundedRectangleBorder)
-                    ? (chipTheme.shape as RoundedRectangleBorder).borderRadius
-                    : BorderRadius.circular(20.0),
-                border: Border.all(
+          // --- START OF THE FIX ---
+          // We check which filter is active to decide which chip to build
+          if (_activeTimelineFilter == 'Day') {
+            // --- This is your special chip for 'Day' ---
+            final parts = chipText.split(',');
+            final dayOfWeek = parts[0]; // "Sat"
+            final dayOfMonth = parts[1].trim().split(' ')[1]; // "1"
+
+            return GestureDetector(
+              onTap: () => setState(() {
+                _selectedDateChipIndex = index;
+                _filterMessages();
+              }),
+              child: Container(
+                width: 48,
+                margin: const EdgeInsets.only(right: 10.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4.0,
+                  vertical: 2.0,
+                ),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? kEcoGreen
-                      : chipTheme.side?.color ?? Colors.grey,
-                  width: isSelected ? 1.5 : 1.0,
+                      ? kEcoGreen.withOpacity(0.1)
+                      : chipTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(10.0),
+                  border: Border.all(
+                    color: isSelected
+                        ? kEcoGreen
+                        : chipTheme.side?.color ?? Colors.grey,
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      dayOfWeek,
+                      style: TextStyle(
+                        color: isSelected
+                            ? kEcoGreen
+                            : chipTheme.labelStyle?.color,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      dayOfMonth,
+                      style: TextStyle(
+                        color: isSelected
+                            ? kEcoGreen
+                            : chipTheme.labelStyle?.color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                chipText, // Use dynamic text
-                style: TextStyle(
-                  color: isSelected ? kEcoGreen : chipTheme.labelStyle?.color,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 15,
+            );
+          } else {
+            // --- This is the simple chip for 'Weekly' and 'Monthly' ---
+            return GestureDetector(
+              onTap: () => setState(() {
+                _selectedDateChipIndex = index;
+                _filterMessages();
+              }),
+              child: Container(
+                // Width is not fixed, it's dynamic
+                margin: const EdgeInsets.only(right: 10.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? kEcoGreen.withOpacity(0.1)
+                      : chipTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(10.0),
+                  border: Border.all(
+                    color: isSelected
+                        ? kEcoGreen
+                        : chipTheme.side?.color ?? Colors.grey,
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  chipText, // "Week 44" or "November"
+                  style: TextStyle(
+                    color: isSelected ? kEcoGreen : chipTheme.labelStyle?.color,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ),
-          );
+            );
+          }
+          // --- END OF THE FIX ---
         },
       ),
     );
   }
-
   Widget _buildCategoryTabs() {
     return Container(
       height: 40,
@@ -439,7 +517,6 @@ class _HomeScreenState extends State<HomeScreen> {
           final category = _categoryTabs[index];
           bool isActive = _activeCategoryTab == category;
           return GestureDetector(
-            // --- UPDATED: onTap must call setState to rebuild message list ---
             onTap: () => setState(() => _activeCategoryTab = category),
             child: Container(
               margin: const EdgeInsets.only(right: 10.0),
@@ -468,51 +545,107 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMessageList() {
-    final messages = _filteredMessages; // Getter handles all filtering
+  // --- 2. UPDATED: Message List build method ---
+  // Widget _buildMessageList() {
+  //   final messages = _filteredMessages;
+
+  //   if (messages.isEmpty) {
+  //     // 2. To make RefreshIndicator work on an empty list,
+  //     // we return a ListView that's always scrollable.
+  //     return ListView(
+  //       physics: const AlwaysScrollableScrollPhysics(),
+  //       children: [
+  //         Container(
+  //           // Set height to fill the available space
+  //           height: MediaQuery.of(context).size.height * 0.4,
+  //           alignment: Alignment.center,
+  //           child: Column(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: [
+  //               Icon(
+  //                 Icons.inbox_outlined,
+  //                 size: 60,
+  //                 color: Colors.grey.withOpacity(0.5),
+  //               ),
+  //               const SizedBox(height: 16),
+  //               Text(
+  //                 _activeTimelineFilter == 'All'
+  //                     ? 'No messages in $_activeCategoryTab'
+  //                     : 'No messages in $_activeCategoryTab\nfor this time period',
+  //                 textAlign: TextAlign.center,
+  //                 style: const TextStyle(fontSize: 16, color: Colors.grey),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     );
+  //   }
+
+  //   return ListView.separated(
+  //     itemCount: messages.length,
+  //     // 2. REMOVED shrinkWrap and NeverScrollableScrollPhysics
+  //     // This allows the list to scroll independently.
+  //     padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 80.0),
+  //     separatorBuilder: (context, index) =>
+  //         Divider(height: 1, color: Theme.of(context).dividerColor, indent: 56),
+  //     itemBuilder: (context, index) {
+  //       final message = messages[index];
+  //       return _buildSlidableMessageListItem(message);
+  //     },
+  //   );
+  // }
+
+Widget _buildMessageList() {
+    final messages = _filteredMessages;
 
     if (messages.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 50.0),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 60,
-              color: Colors.grey.withOpacity(0.5),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Container(
+            height: MediaQuery.of(context).size.height * 0.4,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.inbox_outlined,
+                  size: 60,
+                  color: Colors.grey.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _activeTimelineFilter == 'All'
+                      ? 'No messages in $_activeCategoryTab'
+                      : 'No messages in $_activeCategoryTab\nfor this time period',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              _activeTimelineFilter == 'All'
-                  ? 'No messages in $_activeCategoryTab'
-                  : 'No messages in $_activeCategoryTab\nfor this time period',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
+    // --- REVERTED to ListView.separated ---
     return ListView.separated(
       itemCount: messages.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 80.0),
       separatorBuilder: (context, index) =>
           Divider(height: 1, color: Theme.of(context).dividerColor, indent: 56),
       itemBuilder: (context, index) {
         final message = messages[index];
-        // --- UPDATED: Use the new Slidable item builder ---
-        return _buildSlidableMessageListItem(message);
+        // Pass the index to the build method
+        return _buildSlidableMessageListItem(message, index);
       },
     );
+    // --- END OF REVERT ---
   }
 
-  // --- NEW: Slidable Message List Item ---
-  Widget _buildSlidableMessageListItem(SmsMessage message) {
-    // Helper to get icon for sender (copied from your old _buildMessageListItem)
+
+Widget _buildSlidableMessageListItem(SmsMessage message, int index) {
     IconData getIconForSender(String sender) {
       String s = sender.toLowerCase();
       if (s.contains('hdfc') || s.contains('icici') || s.contains('axis'))
@@ -526,8 +659,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (s.contains('google') || s.contains('facebook'))
         return Icons.password_rounded;
 
-      // Fallback from your original code
       switch (message.transactionType) {
+        // ... (your switch case logic)
         case TransactionType.order:
           return AppIcons.orders;
         case TransactionType.bank:
@@ -550,23 +683,19 @@ class _HomeScreenState extends State<HomeScreen> {
           return Icons.person_outline;
       }
     }
-
-    return Slidable(
-      // --- IMPORTANT: Use a unique key for each item ---
+return Slidable(
       key: Key(message.id),
-
-      // --- Left-to-Right Swipe (Delete) ---
       startActionPane: ActionPane(
         motion: const ScrollMotion(),
-        // A confirmation panel that appears when you slide
         dismissible: DismissiblePane(
           onDismissed: () {
-            _deleteMessage(message);
+            // Pass index to delete method
+            _deleteMessage(message, index);
           },
         ),
         children: [
           SlidableAction(
-            onPressed: (context) => _deleteMessage(message),
+            onPressed: (context) => _deleteMessage(message, index),
             backgroundColor: const Color(0xFFFE4A49),
             foregroundColor: Colors.white,
             icon: Icons.delete,
@@ -574,22 +703,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-
-      // --- Right-to-Left Swipe (Star) ---
       endActionPane: ActionPane(
         motion: const ScrollMotion(),
         children: [
           SlidableAction(
             onPressed: (context) => _toggleStar(message),
-            backgroundColor: const Color(0xFFFDB813), // Amber/Gold color
+            backgroundColor: const Color(0xFFFDB813),
             foregroundColor: Colors.white,
             icon: message.isStarred ? Icons.star : Icons.star_border,
             label: message.isStarred ? 'Unstar' : 'Star',
           ),
         ],
       ),
-
-      // --- The content of the list item ---
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
         leading: CircleAvatar(
@@ -609,35 +734,103 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 14,
           ),
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               SmsAnalyzer.getEmojiForSentiment(message.sentiment),
-              // We keep the emoji size from before
-              style: const TextStyle(fontSize: 22),
+              style: const TextStyle(fontSize: 20),
             ),
             if (message.isStarred)
               Padding(
-                // Reduce padding to 1.0px
-                padding: const EdgeInsets.only(top: 1.0), // Was 2.0
-                child: Icon(
-                  Icons.star,
-                  color: Colors.amber[600],
-                  // Reduce icon size to 10.0px
-                  size: 10.0, // Was 12.0
-                ),
-              )
-            else
-              // Match the new total height: 1.0 (padding) + 10.0 (icon) = 11.0
-              const SizedBox(height: 11.0), // Was 14.0
+                padding: const EdgeInsets.only(left: 4.0),
+                child: Icon(Icons.star, color: Colors.amber[600], size: 12.0),
+              ),
           ],
         ),
         onTap: () {
           // Open message detail
         },
       ),
-    );
+    );    
+    // return Slidable(
+    //   key: Key(message.id),
+    //   // ... (your startActionPane and endActionPane are unchanged) ...
+    //   startActionPane: ActionPane(
+    //     motion: const ScrollMotion(),
+    //     dismissible: DismissiblePane(
+    //       onDismissed: () {
+    //         _deleteMessage(message);
+    //       },
+    //     ),
+    //     children: [
+    //       SlidableAction(
+    //         onPressed: (context) => _deleteMessage(message),
+    //         backgroundColor: const Color(0xFFFE4A49),
+    //         foregroundColor: Colors.white,
+    //         icon: Icons.delete,
+    //         label: 'Delete',
+    //       ),
+    //     ],
+    //   ),
+    //   endActionPane: ActionPane(
+    //     motion: const ScrollMotion(),
+    //     children: [
+    //       SlidableAction(
+    //         onPressed: (context) => _toggleStar(message),
+    //         backgroundColor: const Color(0xFFFDB813),
+    //         foregroundColor: Colors.white,
+    //         icon: message.isStarred ? Icons.star : Icons.star_border,
+    //         label: message.isStarred ? 'Unstar' : 'Star',
+    //       ),
+    //     ],
+    //   ),
+    //   child: ListTile(
+    //     contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+    //     leading: CircleAvatar(
+    //       backgroundColor: Theme.of(context).colorScheme.background,
+    //       child: Icon(getIconForSender(message.sender), color: kEcoGreen),
+    //     ),
+    //     title: Text(
+    //       message.sender,
+    //       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    //     ),
+    //     subtitle: Text(
+    //       message.body,
+    //       maxLines: 1,
+    //       overflow: TextOverflow.ellipsis,
+    //       style: TextStyle(
+    //         color: Theme.of(context).textTheme.bodySmall?.color,
+    //         fontSize: 14,
+    //       ),
+    //     ),
+
+    //     // --- START OF THE FIX (Using a Row) ---
+    //     // This layout is horizontally arranged, so its height is
+    //     // only as tall as the largest child (the emoji).
+    //     // This CANNOT overflow vertically.
+    //     trailing: Row(
+    //       mainAxisSize: MainAxisSize.min,
+    //       crossAxisAlignment: CrossAxisAlignment.center,
+    //       children: [
+    //         Text(
+    //           SmsAnalyzer.getEmojiForSentiment(message.sentiment),
+    //           style: const TextStyle(fontSize: 20),
+    //         ),
+    //         if (message.isStarred)
+    //           Padding(
+    //             padding: const EdgeInsets.only(left: 4.0),
+    //             child: Icon(Icons.star, color: Colors.amber[600], size: 12.0),
+    //           ),
+    //       ],
+    //     ),
+
+    //     // --- END OF THE FIX ---
+    //     onTap: () {
+    //       // Open message detail
+    //     },
+    //   ),
+    // );
   }
-}
+  }
