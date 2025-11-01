@@ -3,11 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
   static const String _firstLaunchKey = 'isFirstLaunch';
-  // Removed: _dataModeKey
-  static const String _themeModeKey = 'themeMode'; // 'light' or 'dark'
-  static const String _summaryLayoutKey =
-      'summaryLayout'; // 'grid', 'list', 'pie'
-  static const String _summaryCardsKey = 'summaryCards'; // List<String>
+  static const String _themeModeKey = 'themeMode';
+  static const String _summaryLayoutKey = 'summaryLayout';
+  static const String _summaryCardsKey = 'summaryCards';
+
+  // --- NEW: Key for storing starred message IDs ---
+  static const String _starredKey = 'starred_message_ids';
 
   Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -55,5 +56,28 @@ class StorageService {
   Future<List<String>> getSummaryCardSelection() async {
     final prefs = await _getPrefs();
     return prefs.getStringList(_summaryCardsKey) ?? [];
+  }
+
+  // --- NEW: Starred Messages ---
+
+  /// Adds or removes a message ID from the list of starred messages.
+  Future<void> starMessage(String id, bool isStarred) async {
+    final prefs = await _getPrefs();
+    List<String> starredIds = prefs.getStringList(_starredKey) ?? [];
+
+    if (isStarred) {
+      if (!starredIds.contains(id)) {
+        starredIds.add(id);
+      }
+    } else {
+      starredIds.remove(id);
+    }
+    await prefs.setStringList(_starredKey, starredIds);
+  }
+
+  /// Retrieves the list of all starred message IDs.
+  Future<List<String>> getStarredIds() async {
+    final prefs = await _getPrefs();
+    return prefs.getStringList(_starredKey) ?? [];
   }
 }

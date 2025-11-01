@@ -36,7 +36,8 @@ dependencies:
   sms_advanced: ^1.1.0  # For reading SMS (only works on Android)
   google_fonts: ^6.1.0  # import 'package:google_fonts/google_fonts.dart';
   provider: ^6.1.1             # For state management (Theme)
-  fl_chart: ^0.64.0            # For Pie Chart view  
+  fl_chart: ^0.64.0            # For Pie Chart view 
+  flutter_slidable: ^3.1.0 # For swipe gestures 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

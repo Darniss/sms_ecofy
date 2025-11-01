@@ -30,6 +30,7 @@ class ThemeProvider extends ChangeNotifier {
 
 // --- Colors ---
 const Color kEcoGreen = Color(0xFF5FBF77);
+const Color kEcoGreenAccent = Color(0xFF8CF2A4);
 const Color kSkyBlue = Color(0xFF6CC3E2);
 const Color kWhite = Color(0xFFFFFFFF);
 const Color kLightBg = Color(0xFFF7F9FC);

@@ -4,7 +4,6 @@ import '/utils/app_icons.dart';
 import '/utils/storage_service.dart';
 import '/utils/theme.dart';
 
-// --- Model for Card Data ---
 class SummaryCardData {
   final String id;
   final String title;
@@ -38,11 +37,17 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
   List<String> _selectedCardIds = ['offers', 'orders', 'travel', 'alerts'];
   late Map<String, SummaryCardData> _allCards;
 
+  // --- NEW: State for interactive pie chart ---
+  int _touchedIndex = -1;
+
   @override
   void initState() {
     super.initState();
     _loadPreferences();
   }
+
+  // --- (updateAllCardsMap, didUpdateWidget, loadPreferences, setLayoutType, showCustomizeDialog...
+  // ... all these methods remain unchanged) ---
 
   void _updateAllCardsMap() {
     _allCards = {
@@ -118,6 +123,8 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.summaryData != widget.summaryData) {
       _updateAllCardsMap();
+      // Reset touched index when data changes
+      _touchedIndex = -1;
     }
   }
 
@@ -162,7 +169,6 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
                             if (tempSelection.length < 4) {
                               tempSelection.add(card.id);
                             } else {
-                              // Show a snackbar or message
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -190,7 +196,6 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
                   child: const Text('Save'),
                   onPressed: () {
                     if (tempSelection.length > 4) {
-                      // This is a safeguard, but the UI should prevent this.
                       return;
                     }
                     setState(() => _selectedCardIds = tempSelection);
@@ -212,6 +217,7 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
   }
 
   Widget _buildHeader() {
+    // ... (Your _buildHeader method is unchanged) ...
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -254,7 +260,6 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
   }
 
   Widget _buildLayout() {
-    // Ensure _allCards is initialized before use
     if (_allCards.isEmpty) {
       _updateAllCardsMap();
     }
@@ -276,6 +281,7 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     }
   }
 
+  // --- UPDATED: Grid View ---
   Widget _buildGridView(List<SummaryCardData> cards) {
     return GridView.builder(
       padding: const EdgeInsets.all(16.0),
@@ -290,33 +296,58 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
       physics: const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
         final card = cards[index];
-        return _buildSummaryCard(card);
+        return _buildCenteredSummaryCard(card);
       },
     );
   }
 
-  Widget _buildSummaryCard(SummaryCardData card) {
+  // --- NEW (Reverted to your original style, but centered) ---
+  Widget _buildCenteredSummaryCard(SummaryCardData card) {
+    // This is your original card layout, with two changes:
+    // 1. Column's crossAxisAlignment is set to CrossAxisAlignment.center
+    // 2. The Container's decoration uses Theme.of(context).cardColor for theme-awareness
+
     return Container(
       decoration: BoxDecoration(
-        color: card.tint,
+        // Use theme card color and your original tint
+        color: Theme.of(context).brightness == Brightness.light
+            ? card.tint
+            : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16.0),
+        // boxShadow: [
+        //   // Optional: Kept my subtle shadow. Remove if you don't like it.
+        //   BoxShadow(
+        //     color: Theme.of(context).shadowColor.withOpacity(0.05),
+        //     blurRadius: 10.0,
+        //     offset: const Offset(0, 4),
+        //   ),
+        // ],
       ),
       child: Padding(
+        // Reverted to your original padding
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // --- FIX: This is the change you wanted ---
+          crossAxisAlignment:
+              CrossAxisAlignment.center, // Was CrossAxisAlignment.start
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Reverted to your original Icon
             Icon(card.icon, color: card.color, size: 28),
+            // Reverted to your original SizedBox
             const SizedBox(height: 8),
+            // Reverted to your original Text structure
             Text(
               '${card.value} ${card.title}',
+              textAlign:
+                  TextAlign.center, // Added for text centering if it wraps
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                // --- FIX: Use Theme.of(context) ---
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
+              maxLines: 2, // Allow for wrapping
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -324,7 +355,63 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
+  // // --- UPDATED: Summary Card ---
+  // Widget _buildSummaryCard(SummaryCardData card) {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: Theme.of(context).cardColor, // Use theme card color
+  //       borderRadius: BorderRadius.circular(16.0),
+  //       boxShadow: [
+  //         // Add consistent shadow
+  //         BoxShadow(
+  //           color: Theme.of(context).shadowColor.withOpacity(0.05),
+  //           blurRadius: 10.0,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(12.0), // Consistent padding
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         crossAxisAlignment: CrossAxisAlignment.center,
+  //         children: [
+  //           // Icon with its colored tint background
+  //           CircleAvatar(
+  //             radius: 20,
+  //             backgroundColor: card.tint,
+  //             child: Icon(card.icon, color: card.color, size: 22),
+  //           ),
+  //           const SizedBox(height: 12),
+  //           // Value
+  //           Text(
+  //             card.value.toString(),
+  //             style: TextStyle(
+  //               fontSize: 20,
+  //               fontWeight: FontWeight.bold,
+  //               color: Theme.of(context).textTheme.bodyLarge?.color,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 4),
+  //           // Title
+  //           Text(
+  //             card.title,
+  //             textAlign: TextAlign.center,
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               color: Theme.of(context).textTheme.bodySmall?.color,
+  //             ),
+  //             maxLines: 1,
+  //             overflow: TextOverflow.ellipsis,
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildListView(List<SummaryCardData> cards) {
+    // ... (Your _buildListView method is unchanged) ...
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: cards.length,
@@ -351,6 +438,39 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
+  // --- NEW: Pie Chart Legend Widget ---
+  Widget _buildPieChartLegends(List<SummaryCardData> cards) {
+    return Wrap(
+      spacing: 16.0,
+      runSpacing: 8.0,
+      alignment: WrapAlignment.center,
+      children: cards.map((card) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: card.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              card.title,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // --- UPDATED: Pie Chart View ---
   Widget _buildPieChartView(List<SummaryCardData> cards) {
     final total = cards.fold<double>(0, (sum, item) => sum + item.value);
     if (total == 0) {
@@ -362,27 +482,62 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
       );
     }
 
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
-      child: PieChart(
-        PieChartData(
-          sections: cards.map((card) {
-            return PieChartSectionData(
-              color: card.color,
-              value: card.value.toDouble(),
-              title: '${(card.value / total * 100).toStringAsFixed(0)}%',
-              radius: 50,
-              titleStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 200,
+            child: PieChart(
+              PieChartData(
+                // Add touch interaction
+                pieTouchData: PieTouchData(
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions ||
+                          pieTouchResponse == null ||
+                          pieTouchResponse.touchedSection == null) {
+                        _touchedIndex = -1;
+                        return;
+                      }
+                      _touchedIndex =
+                          pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    });
+                  },
+                ),
+                sectionsSpace: 4, // Add space between sections
+                centerSpaceRadius: 60, // Make it a "doughnut" chart
+                sections: List.generate(cards.length, (index) {
+                  final card = cards[index];
+                  final isTouched = index == _touchedIndex;
+                  final double radius = isTouched ? 60.0 : 50.0;
+                  final double percentage = (card.value / total * 100);
+
+                  return PieChartSectionData(
+                    color: card.color, // This solid color will be used
+                    value: card.value.toDouble(),
+                    // Show percentage only on tap
+                    title: isTouched ? '${percentage.toStringAsFixed(0)}%' : '',
+                    radius: radius,
+                    titleStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 2)],
+                    ),
+
+                    // --- FIX: Removed the 'gradient' parameter ---
+                    // The 'gradient' property was causing the error
+                    // as it's not supported in your fl_chart version.
+                  );
+                }),
               ),
-            );
-          }).toList(),
-          sectionsSpace: 2,
-          centerSpaceRadius: 40,
-        ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Add the legends
+          _buildPieChartLegends(cards),
+        ],
       ),
     );
   }
