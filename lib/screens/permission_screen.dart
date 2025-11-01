@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '/utils/storage_service.dart';
 import '/utils/theme.dart';
-import '/widgets/app_navigation.dart';
+import '/widgets/app_navigation.dart'; 
 
 class PermissionScreen extends StatefulWidget {
   const PermissionScreen({super.key});
@@ -15,19 +15,34 @@ class _PermissionScreenState extends State<PermissionScreen> {
   final StorageService _storageService = StorageService();
   bool _isLoading = false;
 
-  Future<void> _requestSmsPermission() async {
+  // --- UPDATED: Requesting multiple permissions ---
+  Future<void> _requestAllPermissions() async {
     setState(() {
       _isLoading = true;
     });
 
-    var status = await Permission.sms.request();
+    // Request SMS, Contacts, and Phone permissions at the same time
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.sms,
+      Permission.contacts,
+      Permission.phone,
+    ].request();
 
-    if (status.isGranted) {
+    // Check if all permissions are granted
+    bool allGranted = statuses.values.every((status) => status.isGranted);
+
+    if (allGranted) {
       _proceedToHome();
-    } else if (status.isPermanentlyDenied) {
-      _showSettingsDialog();
     } else {
-      _showPermissionDeniedDialog();
+      // Check if any are permanently denied
+      bool permanentlyDenied = statuses.values.any(
+        (status) => status.isPermanentlyDenied,
+      );
+      if (permanentlyDenied) {
+        _showSettingsDialog();
+      } else {
+        _showPermissionDeniedDialog();
+      }
     }
 
     if (mounted) {
@@ -38,9 +53,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
   }
 
   Future<void> _proceedToHome() async {
-    // Mark first launch as done
     await _storageService.setFirstLaunchDone();
-
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
@@ -52,9 +65,10 @@ class _PermissionScreenState extends State<PermissionScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
+        title: const Text('Permissions Required'),
         content: const Text(
-          'SMS permission is permanently denied. Please go to app settings to enable it.',
+          'SMS, Contacts, and Phone permissions are required for the app to function fully. '
+          'Please go to app settings to enable them.',
         ),
         actions: [
           TextButton(
@@ -77,9 +91,10 @@ class _PermissionScreenState extends State<PermissionScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Permission Denied'),
+        title: const Text('Permissions Denied'),
         content: const Text(
-          'SMS permission is required for the app to read your messages. Please grant permission to continue.',
+          'Some permissions were denied. The app may have limited functionality. '
+          'You can grant them later from the app settings.',
         ),
         actions: [
           TextButton(
@@ -116,20 +131,36 @@ class _PermissionScreenState extends State<PermissionScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'To help you organize your inbox, we need permission to read your SMS messages.',
+                'To organize your inbox, compose messages, and view contact info, we need a few permissions:',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
-              const SizedBox(height: 40),
-
-              // --- Removed Test / Production Toggle ---
+              // --- NEW: Added list of permissions ---
+              const SizedBox(height: 24),
+              _buildPermissionItem(
+                Icons.sms,
+                'SMS',
+                'To read and organize your messages',
+              ),
+              const SizedBox(height: 12),
+              _buildPermissionItem(
+                Icons.contacts,
+                'Contacts',
+                'To show names and compose new messages',
+              ),
+              const SizedBox(height: 12),
+              _buildPermissionItem(
+                Icons.phone,
+                'Phone',
+                'To let you call a contact from a message',
+              ),
+              // ------------------------------------
               const Spacer(),
-
-              // --- Action Button ---
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton(
-                      onPressed: _requestSmsPermission,
+                      // --- UPDATED: Calls the new method ---
+                      onPressed: _requestAllPermissions,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kEcoGreen,
                         foregroundColor: Colors.white,
@@ -140,7 +171,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
                         elevation: 2,
                       ),
                       child: const Text(
-                        'Grant Permission',
+                        'Grant All Permissions',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -151,7 +182,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
               TextButton(
                 onPressed: _proceedToHome,
                 child: const Text(
-                  'Continue without Permission (Limited Mode)',
+                  'Continue with Limited Mode',
                   style: TextStyle(color: kEcoGreen),
                 ),
               ),
@@ -159,6 +190,33 @@ class _PermissionScreenState extends State<PermissionScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // --- NEW: Helper widget for the UI ---
+  Widget _buildPermissionItem(IconData icon, String title, String subtitle) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: kEcoGreen, size: 28),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -6,7 +6,7 @@ class ReminderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminders')),
+      appBar: AppBar(title: const Text('Reminders'), centerTitle: true),
       body: const Center(
         child: Text('Reminders Screen', style: TextStyle(fontSize: 24)),
       ),

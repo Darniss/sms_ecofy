@@ -6,7 +6,7 @@ class FinanceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Finance')),
+      appBar: AppBar(title: const Text('Finance'), centerTitle: true),
       body: const Center(
         child: Text('Finance Screen', style: TextStyle(fontSize: 24)),
       ),

@@ -8,7 +8,7 @@ import '/utils/app_icons.dart';
 import '/utils/storage_service.dart';
 import '/utils/theme.dart';
 import '/utils/time_helper.dart';
-import '/widgets/summary_cards_section.dart'; 
+import '/widgets/summary_cards_section.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +18,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final StorageService _storageService = StorageService();
 
   // State variables
@@ -33,7 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _dynamicDateChips = [];
   int _selectedDateChipIndex = 0;
 
-  final List<String> _timelineFilters = ['All', 'Day', 'Weekly', 'Monthly', 'Yearly'];
+  final List<String> _timelineFilters = [
+    'All',
+    'Day',
+    'Weekly',
+    'Monthly',
+    'Yearly',
+  ];
   final List<String> _categoryTabs = [
     'Personal',
     'Transactions',
@@ -92,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'Yearly':
         _dynamicDateChips = TimeHelper.generateYearChips();
-        break;        
+        break;
       case 'All':
       default:
         _dynamicDateChips = [];
@@ -146,27 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _storageService.starMessage(message.id, message.isStarred);
   }
 
-  // void _deleteMessage(SmsMessage message) {
-  //   final int masterIndex = _allMessages.indexOf(message);
-  //   if (masterIndex == -1) return;
-
-  //   setState(() {
-  //     _allMessages.removeAt(masterIndex);
-  //     _filterMessages();
-  //   });
-
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     SnackBar(
-  //       content: const Text('Message deleted'),
-  //       action: SnackBarAction(
-  //         label: 'UNDO',
-  //         onPressed: () => _undoDelete(message, masterIndex),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-void _deleteMessage(SmsMessage message, int index) {
+  void _deleteMessage(SmsMessage message, int index) {
     final int masterIndex = _allMessages.indexOf(message);
     if (masterIndex == -1) return;
 
@@ -187,13 +172,7 @@ void _deleteMessage(SmsMessage message, int index) {
     );
   }
 
-  // void _undoDelete(SmsMessage message, int masterIndex) {
-  //   setState(() {
-  //     _allMessages.insert(masterIndex, message);
-  //     _filterMessages();
-  //   });
-  // }
-void _undoDelete(SmsMessage message, int masterIndex) {
+  void _undoDelete(SmsMessage message, int masterIndex) {
     // Add the data back and call setState
     setState(() {
       if (masterIndex <= _allMessages.length) {
@@ -239,9 +218,14 @@ void _undoDelete(SmsMessage message, int masterIndex) {
                 ),
               ],
             ),
-      // --- FAB was removed here, it's now in MainNavigationScreen ---
       // We also fixed the Hero tag conflict by removing this FAB
       // If you need it, add it to MainNavigationScreen
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'homeScreenFab',
+        onPressed: () {},
+        child: const Icon(AppIcons.fabIcon, size: 28),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -249,9 +233,11 @@ void _undoDelete(SmsMessage message, int masterIndex) {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: const Text(
-        '🌿 SMS Ecofy',
+        'SMS Ecofy',
+        // '🌿 SMS Ecofy',
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
       ),
+      // centerTitle: true,
       actions: [
         IconButton(
           icon: const Icon(AppIcons.search, size: 28),
@@ -385,7 +371,7 @@ void _undoDelete(SmsMessage message, int masterIndex) {
   }
 
   // --- 3. UPDATED: Date Scroller build method ---
-Widget _buildDateScroller() {
+  Widget _buildDateScroller() {
     final chipTheme = Theme.of(context).chipTheme;
     return Container(
       height: 50,
@@ -506,6 +492,7 @@ Widget _buildDateScroller() {
       ),
     );
   }
+
   Widget _buildCategoryTabs() {
     return Container(
       height: 40,
@@ -546,57 +533,7 @@ Widget _buildDateScroller() {
   }
 
   // --- 2. UPDATED: Message List build method ---
-  // Widget _buildMessageList() {
-  //   final messages = _filteredMessages;
-
-  //   if (messages.isEmpty) {
-  //     // 2. To make RefreshIndicator work on an empty list,
-  //     // we return a ListView that's always scrollable.
-  //     return ListView(
-  //       physics: const AlwaysScrollableScrollPhysics(),
-  //       children: [
-  //         Container(
-  //           // Set height to fill the available space
-  //           height: MediaQuery.of(context).size.height * 0.4,
-  //           alignment: Alignment.center,
-  //           child: Column(
-  //             mainAxisAlignment: MainAxisAlignment.center,
-  //             children: [
-  //               Icon(
-  //                 Icons.inbox_outlined,
-  //                 size: 60,
-  //                 color: Colors.grey.withOpacity(0.5),
-  //               ),
-  //               const SizedBox(height: 16),
-  //               Text(
-  //                 _activeTimelineFilter == 'All'
-  //                     ? 'No messages in $_activeCategoryTab'
-  //                     : 'No messages in $_activeCategoryTab\nfor this time period',
-  //                 textAlign: TextAlign.center,
-  //                 style: const TextStyle(fontSize: 16, color: Colors.grey),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ],
-  //     );
-  //   }
-
-  //   return ListView.separated(
-  //     itemCount: messages.length,
-  //     // 2. REMOVED shrinkWrap and NeverScrollableScrollPhysics
-  //     // This allows the list to scroll independently.
-  //     padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 80.0),
-  //     separatorBuilder: (context, index) =>
-  //         Divider(height: 1, color: Theme.of(context).dividerColor, indent: 56),
-  //     itemBuilder: (context, index) {
-  //       final message = messages[index];
-  //       return _buildSlidableMessageListItem(message);
-  //     },
-  //   );
-  // }
-
-Widget _buildMessageList() {
+  Widget _buildMessageList() {
     final messages = _filteredMessages;
 
     if (messages.isEmpty) {
@@ -644,8 +581,7 @@ Widget _buildMessageList() {
     // --- END OF REVERT ---
   }
 
-
-Widget _buildSlidableMessageListItem(SmsMessage message, int index) {
+  Widget _buildSlidableMessageListItem(SmsMessage message, int index) {
     IconData getIconForSender(String sender) {
       String s = sender.toLowerCase();
       if (s.contains('hdfc') || s.contains('icici') || s.contains('axis'))
@@ -683,7 +619,8 @@ Widget _buildSlidableMessageListItem(SmsMessage message, int index) {
           return Icons.person_outline;
       }
     }
-return Slidable(
+
+    return Slidable(
       key: Key(message.id),
       startActionPane: ActionPane(
         motion: const ScrollMotion(),
@@ -753,7 +690,7 @@ return Slidable(
           // Open message detail
         },
       ),
-    );    
+    );
     // return Slidable(
     //   key: Key(message.id),
     //   // ... (your startActionPane and endActionPane are unchanged) ...
@@ -833,4 +770,4 @@ return Slidable(
     //   ),
     // );
   }
-  }
+}

@@ -6,7 +6,7 @@ class PrivacyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy')),
+      appBar: AppBar(title: const Text('Privacy'), centerTitle: true),
       body: const Center(
         child: Text('Privacy Screen', style: TextStyle(fontSize: 24)),
       ),

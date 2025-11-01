@@ -6,7 +6,7 @@ class WellnessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Wellness')),
+      appBar: AppBar(title: const Text('Wellness'), centerTitle: true),
       body: const Center(
         child: Text('Wellness Screen', style: TextStyle(fontSize: 24)),
       ),
