@@ -1,14 +1,18 @@
+import 'package:telephony/telephony.dart' as telephony; // For fetching SMS
+import '/core/algorithms.dart' as alogo_; // For your SmsAnalyzer
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '/config/env_config.dart';
-import '/core/algorithms.dart';
+
 import '/data/sample_sms_data.dart';
 import '/utils/app_icons.dart';
 import '/utils/storage_service.dart';
 import '/utils/theme.dart';
 import '/utils/time_helper.dart';
 import '/widgets/summary_cards_section.dart';
+import '/screens/compose_sms_screen.dart';
+import '/screens/chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,22 +56,82 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadData();
   }
-
+  final telephony.Telephony _telephony = telephony.Telephony.instance;
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
 
+
     await Future.delayed(const Duration(milliseconds: 500));
 
     List<SmsMessage> loadedMessages = [];
-    if (EnvironmentConfig.isTestMode) {
+    // if (EnvironmentConfig.isTestMode) {
+    //   loadedMessages = sampleSmsList;
+    //   _summary = summaryData;
+    // } else {
+    //   loadedMessages = sampleSmsList;
+    //   _summary = summaryData;
+    // }
+
+if (EnvironmentConfig.isTestMode) {
+      // --- TEST MODE ---
       loadedMessages = sampleSmsList;
-      _summary = summaryData;
     } else {
-      loadedMessages = sampleSmsList;
-      _summary = summaryData;
-    }
+      // --- PRODUCTION MODE ---
+      // 1. Get permissions (permission_screen should have done this, but we check)
+      bool? permissionsGranted = await _telephony.requestSmsPermissions;
+      if (permissionsGranted != true) {
+        // Show an error or prompt
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // 2. Fetch all inbox SMS
+      List<telephony.SmsMessage> liveSms = await _telephony.getInboxSms(
+        columns: [
+          telephony.SmsColumn.ADDRESS, 
+          telephony.SmsColumn.BODY,
+          telephony.SmsColumn.DATE, 
+        ],
+        sortOrder: [
+          telephony.OrderBy(
+            telephony.SmsColumn.DATE,
+            sort: telephony.Sort.DESC,
+          ),
+        ],
+      );
+
+      // 3. RUN THE ANALYZER (This is the most important step)
+      final analyzer = alogo_.SmsAnalyzer();
+      
+      int idCounter = 0;
+
+      for (var liveMsg in liveSms) {
+        if (liveMsg.body == null ||
+            liveMsg.address == null ||
+            liveMsg.date == null) {
+          continue;
+        }
+
+        // 4. Analyze the live SMS body
+        final analysisResult = analyzer.analyze(liveMsg.body!);
+
+        // 5. Map Telephony data to YOUR SmsMessage model
+        loadedMessages.add(
+          SmsMessage(
+            id: 'live_${liveMsg.id ?? idCounter++}', // Create a unique ID
+            sender: liveMsg.address!,
+            body: liveMsg.body!,
+            timestamp: DateTime.fromMillisecondsSinceEpoch(liveMsg.date!),
+            category: analysisResult.category,
+            sentiment: analysisResult.sentiment,
+            transactionType: analysisResult.transactionType,
+            isStarred: false, // Default to false
+          ),
+        );
+      }
+    }    
 
     final starredIds = await _storageService.getStarredIds();
     for (var msg in loadedMessages) {
@@ -83,6 +147,53 @@ class _HomeScreenState extends State<HomeScreen> {
       _filterMessages();
     });
   }
+
+
+  Map<String, int> _calculateSummary(List<SmsMessage> messages) {
+    int offers = 0;
+    int orders = 0;
+    int travel = 0;
+    int alerts = 0;
+    int spam = 0;
+    // Note: PIM, Carbon, and Trust are not from messages,
+    // so we'll get them from the original summaryData.
+    // In a real app, you'd calculate these scores separately.
+
+    for (var msg in messages) {
+      switch (msg.transactionType) {
+        case alogo_.TransactionType.offer:
+          offers++;
+          break;
+        case alogo_.TransactionType.order:
+          orders++;
+          break;
+        case alogo_.TransactionType.travel:
+          travel++;
+          break;
+        case alogo_.TransactionType.alert:
+          alerts++;
+          break;
+        case alogo_.TransactionType.spam:
+          spam++;
+          break;
+        default:
+          break;
+      }
+    }
+
+    return {
+      'offers': offers,
+      'orders': orders,
+      'travel': travel,
+      'alerts': alerts,
+      'spam': spam,
+      // --- Using fixed scores for these as they aren't message-based ---
+      'pim': summaryData['pim'] ?? 75,
+      'carbon': summaryData['carbon'] ?? 40,
+      'trust': summaryData['trust'] ?? 85,
+    };
+  }
+
 
   void _updateDynamicChips() {
     switch (_activeTimelineFilter) {
@@ -105,6 +216,22 @@ class _HomeScreenState extends State<HomeScreen> {
     _selectedDateChipIndex = 0;
   }
 
+  // void _filterMessages() {
+  //   String selectedChip = '';
+  //   if (_dynamicDateChips.isNotEmpty &&
+  //       _selectedDateChipIndex < _dynamicDateChips.length) {
+  //     selectedChip = _dynamicDateChips[_selectedDateChipIndex];
+  //   } else if (_activeTimelineFilter != 'All') {
+  //     _timeFilteredMessages = [];
+  //     return;
+  //   }
+
+  //   _timeFilteredMessages = TimeHelper.filterMessagesByTime(
+  //     _allMessages,
+  //     _activeTimelineFilter,
+  //     selectedChip,
+  //   );
+  // }
   void _filterMessages() {
     String selectedChip = '';
     if (_dynamicDateChips.isNotEmpty &&
@@ -112,6 +239,11 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedChip = _dynamicDateChips[_selectedDateChipIndex];
     } else if (_activeTimelineFilter != 'All') {
       _timeFilteredMessages = [];
+      // --- NEW ---
+      setState(() {
+        _summary = _calculateSummary(_timeFilteredMessages);
+      });
+      // --- END NEW ---
       return;
     }
 
@@ -120,6 +252,13 @@ class _HomeScreenState extends State<HomeScreen> {
       _activeTimelineFilter,
       selectedChip,
     );
+
+    // --- NEW ---
+    // Recalculate the summary based on the newly time-filtered list
+    setState(() {
+      _summary = _calculateSummary(_timeFilteredMessages);
+    });
+    // --- END NEW ---
   }
 
   List<SmsMessage> get _filteredMessages {
@@ -131,13 +270,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_activeCategoryTab == 'OTP') {
       return messagesToFilter
-          .where((m) => m.transactionType == TransactionType.otp)
+          .where((m) => m.transactionType == alogo_.TransactionType.otp) 
           .toList();
     }
 
     return messagesToFilter.where((m) {
       if (_activeCategoryTab == 'Transactions' &&
-          m.transactionType == TransactionType.otp) {
+          m.transactionType == alogo_.TransactionType.otp) {
         return false;
       }
       return m.category.name.toLowerCase() == _activeCategoryTab.toLowerCase();
@@ -222,7 +361,15 @@ class _HomeScreenState extends State<HomeScreen> {
       // If you need it, add it to MainNavigationScreen
       floatingActionButton: FloatingActionButton(
         heroTag: 'homeScreenFab',
-        onPressed: () {},
+        onPressed: () {
+          // NEW
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              // NEW
+              builder: (context) => const ComposeSmsScreen(), // NEW
+            ),
+          );
+        },
         child: const Icon(AppIcons.fabIcon, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -597,23 +744,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
       switch (message.transactionType) {
         // ... (your switch case logic)
-        case TransactionType.order:
+        case alogo_.TransactionType.order:
           return AppIcons.orders;
-        case TransactionType.bank:
+        case alogo_.TransactionType.bank:
           return AppIcons.finance;
-        case TransactionType.travel:
+        case alogo_.TransactionType.travel:
           return AppIcons.travel;
-        case TransactionType.bill:
+        case alogo_.TransactionType.bill:
           return Icons.receipt_long_rounded;
-        case TransactionType.offer:
+        case alogo_.TransactionType.offer:
           return AppIcons.offers;
-        case TransactionType.spam:
+        case alogo_.TransactionType.spam:
           return AppIcons.spam;
-        case TransactionType.otp:
+        case alogo_.TransactionType.otp:
           return Icons.password_rounded;
-        case TransactionType.alert:
+        case alogo_.TransactionType.alert:
           return Icons.warning_amber_rounded;
-        case TransactionType.social:
+        case alogo_.TransactionType.social:
           return Icons.group_rounded;
         default:
           return Icons.person_outline;
@@ -686,88 +833,23 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
           ],
         ),
-        onTap: () {
-          // Open message detail
-        },
+      onTap: () {
+        // Get all messages for this thread/sender
+        List<SmsMessage> threadMessages = _allMessages
+            .where((m) => m.sender == message.sender)
+            .toList();
+
+        // Sort them by time
+        threadMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            sender: message.sender,
+            messages: threadMessages,
+          ),
+        ));
+      },
       ),
     );
-    // return Slidable(
-    //   key: Key(message.id),
-    //   // ... (your startActionPane and endActionPane are unchanged) ...
-    //   startActionPane: ActionPane(
-    //     motion: const ScrollMotion(),
-    //     dismissible: DismissiblePane(
-    //       onDismissed: () {
-    //         _deleteMessage(message);
-    //       },
-    //     ),
-    //     children: [
-    //       SlidableAction(
-    //         onPressed: (context) => _deleteMessage(message),
-    //         backgroundColor: const Color(0xFFFE4A49),
-    //         foregroundColor: Colors.white,
-    //         icon: Icons.delete,
-    //         label: 'Delete',
-    //       ),
-    //     ],
-    //   ),
-    //   endActionPane: ActionPane(
-    //     motion: const ScrollMotion(),
-    //     children: [
-    //       SlidableAction(
-    //         onPressed: (context) => _toggleStar(message),
-    //         backgroundColor: const Color(0xFFFDB813),
-    //         foregroundColor: Colors.white,
-    //         icon: message.isStarred ? Icons.star : Icons.star_border,
-    //         label: message.isStarred ? 'Unstar' : 'Star',
-    //       ),
-    //     ],
-    //   ),
-    //   child: ListTile(
-    //     contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
-    //     leading: CircleAvatar(
-    //       backgroundColor: Theme.of(context).colorScheme.background,
-    //       child: Icon(getIconForSender(message.sender), color: kEcoGreen),
-    //     ),
-    //     title: Text(
-    //       message.sender,
-    //       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-    //     ),
-    //     subtitle: Text(
-    //       message.body,
-    //       maxLines: 1,
-    //       overflow: TextOverflow.ellipsis,
-    //       style: TextStyle(
-    //         color: Theme.of(context).textTheme.bodySmall?.color,
-    //         fontSize: 14,
-    //       ),
-    //     ),
-
-    //     // --- START OF THE FIX (Using a Row) ---
-    //     // This layout is horizontally arranged, so its height is
-    //     // only as tall as the largest child (the emoji).
-    //     // This CANNOT overflow vertically.
-    //     trailing: Row(
-    //       mainAxisSize: MainAxisSize.min,
-    //       crossAxisAlignment: CrossAxisAlignment.center,
-    //       children: [
-    //         Text(
-    //           SmsAnalyzer.getEmojiForSentiment(message.sentiment),
-    //           style: const TextStyle(fontSize: 20),
-    //         ),
-    //         if (message.isStarred)
-    //           Padding(
-    //             padding: const EdgeInsets.only(left: 4.0),
-    //             child: Icon(Icons.star, color: Colors.amber[600], size: 12.0),
-    //           ),
-    //       ],
-    //     ),
-
-    //     // --- END OF THE FIX ---
-    //     onTap: () {
-    //       // Open message detail
-    //     },
-    //   ),
-    // );
   }
 }

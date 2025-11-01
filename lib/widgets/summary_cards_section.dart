@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '/utils/app_icons.dart';
 import '/utils/storage_service.dart';
+import '/screens/summary_detail_screen.dart';
 import '/utils/theme.dart';
 
 class SummaryCardData {
@@ -310,6 +311,25 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
   }
 
   // --- _buildGridView is UNCHANGED (with the mainAxisExtent fix) ---
+  // Widget _buildGridView(List<SummaryCardData> cards) {
+  //   return GridView.builder(
+  //     padding: const EdgeInsets.all(16.0),
+  //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+  //       crossAxisCount: 2,
+  //       crossAxisSpacing: 12.0,
+  //       mainAxisSpacing: 12.0,
+  //       mainAxisExtent: 100, // Fixed height to prevent overflow
+  //     ),
+  //     itemCount: cards.length,
+  //     shrinkWrap: true,
+  //     physics: const NeverScrollableScrollPhysics(),
+  //     itemBuilder: (context, index) {
+  //       final card = cards[index];
+  //       return _buildCenteredSummaryCard(card);
+  //     },
+  //   );
+  // }
+
   Widget _buildGridView(List<SummaryCardData> cards) {
     return GridView.builder(
       padding: const EdgeInsets.all(16.0),
@@ -317,7 +337,11 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
         crossAxisCount: 2,
         crossAxisSpacing: 12.0,
         mainAxisSpacing: 12.0,
-        mainAxisExtent: 100, // Fixed height to prevent overflow
+        // --- ADD THIS LINE ---
+        // Give each card a fixed height of 110 pixels.
+        // You can adjust this value as needed.
+        mainAxisExtent: 110,
+        // --------------------
       ),
       itemCount: cards.length,
       shrinkWrap: true,
@@ -329,9 +353,14 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
     );
   }
 
-  // --- _buildCenteredSummaryCard is UNCHANGED ---
   Widget _buildCenteredSummaryCard(SummaryCardData card) {
-    return Container(
+    return InkWell( // NEW
+  onTap: () { // NEW
+    Navigator.of(context).push(MaterialPageRoute( // NEW
+      builder: (context) => SummaryDetailScreen(card: card), // NEW
+    ));
+  },
+  child: Container(
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.light
             ? card.tint
@@ -353,21 +382,27 @@ class _SummaryCardsSectionState extends State<SummaryCardsSection> {
           children: [
             Icon(card.icon, color: card.color, size: 28),
             const SizedBox(height: 8),
-            Text(
-              '${card.value} ${card.title}',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+            Flexible(
+                child: Text(
+                  '${card.value} ${card.title}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+          //   Hero( // NEW
+          //   tag: 'summary_icon_${card.id}', // NEW: Unique tag
+          //   child: Icon(card.icon, color: card.color, size: 28), // NEW
+          // ),
           ],
         ),
       ),
-    );
+    ));
   }
 
   // --- _buildListView is UNCHANGED ---

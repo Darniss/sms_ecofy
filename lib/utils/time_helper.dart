@@ -1,13 +1,39 @@
 import 'package:intl/intl.dart';
 import '/data/sample_sms_data.dart'; 
-
+import '/config/env_config.dart';
 class TimeHelper {
   // Use a fixed date for reliable testing.
-  static final _now = DateTime(2025, 11, 1); // This is a Saturday
-  // static final _now = DateTime.now(); // Use this in production
+static final _now = EnvironmentConfig.isTestMode
+      ? DateTime(2025, 11, 1) // This is a Saturday
+      : DateTime.now(); // Use this in production
 
+static String formatTimestamp(DateTime timestamp) {
+    final now = _now; // Use the same 'now' as the class for consistency
+    final difference = now.difference(timestamp);
+
+    // Check if it's "today"
+    if (difference.inDays == 0 && now.day == timestamp.day) {
+      return DateFormat('h:mm a').format(timestamp); // "10:30 AM"
+    }
+    // Check if it's "yesterday"
+    else if (difference.inDays == 1 ||
+        (difference.inDays == 0 && now.day != timestamp.day)) {
+      return 'Yesterday';
+    }
+    // Check if it's within the last week
+    else if (difference.inDays < 7) {
+      return DateFormat('E').format(timestamp); // "Mon"
+    }
+    // Check if it's this year
+    else if (now.year == timestamp.year) {
+      return DateFormat('MMM d').format(timestamp); // "Nov 1"
+    }
+    // Otherwise, show full date
+    else {
+      return DateFormat('d/M/yy').format(timestamp); // "1/11/24"
+    }
+  }
   // --- Chip Generators ---
-
   static List<String> generateDayChips() {
     // --- UPDATED: Changed format to include day of the week ---
     final format = DateFormat('E, MMM d'); // e.g., "Sat, Nov 1"

@@ -24,6 +24,42 @@ class SmsMessage {
   });
 }
 
+class SmsAnalyzer {
+  static SmsCategory getCategory(String body) {
+    // Add your real categorization logic here
+    if (body.toLowerCase().contains('order')) return SmsCategory.transactions;
+    if (body.toLowerCase().contains('offer')) return SmsCategory.promotions;
+    return SmsCategory.personal;
+  }
+
+  static Sentiment getSentiment(String body) {
+    // Add your real sentiment logic here
+    if (body.toLowerCase().contains('congratulations')) return Sentiment.happy;
+    if (body.toLowerCase().contains('low balance')) return Sentiment.warning;
+    return Sentiment.neutral;
+  }
+
+  static TransactionType getTransactionType(String body) {
+    // Add your real transaction logic here
+    if (body.toLowerCase().contains('order')) return TransactionType.order;
+    if (body.toLowerCase().contains('otp')) return TransactionType.otp;
+    if (body.toLowerCase().contains('flight')) return TransactionType.travel;
+    return TransactionType.none;
+  }
+
+  static String getEmojiForSentiment(Sentiment sentiment) {
+    switch (sentiment) {
+      case Sentiment.happy:
+        return '😊';
+      case Sentiment.warning:
+        return '⚠️';
+      case Sentiment.neutral:
+      default:
+        return '💬';
+    }
+  }
+}
+
 // --- UPDATED: Sample data with fixed timestamps and new fields ---
 // Using fixed dates is crucial for testing the time filters.
 final List<SmsMessage> sampleSmsList = [
