@@ -159,8 +159,8 @@ But the road wasn’t smooth — we encountered multiple challenges along the wa
 
 ### 🧩 Finding the Right Idea
 Initially, we explored various app and come up with various app designs .
-Here we attaching our old ideas
-https://www.figma.com/design/DzGLGVp8J9HlgQvki9vdCN/SMS-Summarizer?node-id=0-1&p=f&t=wMAIBOYmJBmzTWNW-0
+Here are our final design 
+https://www.figma.com/design/kpo8WNPgs0rwEt6Q0Sb0sy/NextGenStackers?node-id=0-1&p=f&t=gxRJ0FlHiFcliS9q-0
 
 ### 📨 Message Classification
 Developing efficient categorization logic for thousands of message formats required **multiple iterations and regex optimizations** to ensure high accuracy.
