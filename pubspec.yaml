@@ -34,7 +34,8 @@ dependencies:
   permission_handler: ^11.3.0
   shared_preferences: ^2.2.15 
   url_launcher: ^6.3.1          # For making phone calls
-  contacts_service: ^0.6.3      # For reading contacts (for compose screen)
+  # contacts_service: ^0.6.3      # For reading contacts (for compose screen)
+  flutter_contacts: ^1.1.7+1
   telephony: ^0.2.0             # For sending SMS  
   sms_advanced: ^1.1.0          # For reading SMS (only works on Android)
   google_fonts: ^6.1.0          # import 'package:google_fonts/google_fonts.dart';

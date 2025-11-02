@@ -835,19 +835,35 @@ if (EnvironmentConfig.isTestMode) {
         ),
       onTap: () {
         // Get all messages for this thread/sender
+        // List<SmsMessage> threadMessages = _allMessages
+        //     .where((m) => m.sender == message.sender)
+        //     .toList();
+
+        // // Sort them by time
+        // threadMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+        // Navigator.of(context).push(MaterialPageRoute(
+        //   builder: (context) => ChatScreen(
+        //     sender: message.sender,
+        //     messages: threadMessages,
+        //   ),
+        // ));
+
         List<SmsMessage> threadMessages = _allMessages
-            .where((m) => m.sender == message.sender)
-            .toList();
+              .where((m) => m.sender == message.sender)
+              .toList();
 
-        // Sort them by time
-        threadMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          // --- IMPORTANT: Sort them by time, OLDEST to NEWEST ---
+          threadMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            sender: message.sender,
-            messages: threadMessages,
-          ),
-        ));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                sender: message.sender,
+                messages: threadMessages, // Pass the sorted list
+              ),
+            ),
+          );        
       },
       ),
     );

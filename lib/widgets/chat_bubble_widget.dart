@@ -6,6 +6,7 @@ import '/utils/theme.dart'; // For kEcoGreen
 class ChatBubbleWidget extends StatelessWidget {
   final SmsMessage message;
   final bool isSelected;
+  final bool isSent;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -14,6 +15,7 @@ class ChatBubbleWidget extends StatelessWidget {
     required this.message,
     required this.isSelected,
     required this.onTap,
+    required this.isSent,
     required this.onLongPress,
   });
 
@@ -23,24 +25,44 @@ class ChatBubbleWidget extends StatelessWidget {
     // Since your model doesn't have this, we'll assume all are RECEIVED.
     const bool isReceived = true;
 
-    final align = isReceived ? Alignment.centerLeft : Alignment.centerRight;
-    final bubbleColor = isReceived
-        ? Theme.of(context).colorScheme.surfaceVariant
-        : kEcoGreen.withOpacity(0.8);
-    final textColor = isReceived
-        ? Theme.of(context).colorScheme.onSurfaceVariant
-        : Colors.white;
+    // final align = isReceived ? Alignment.centerLeft : Alignment.centerRight;
+    // final bubbleColor = isReceived
+    //     ? Theme.of(context).colorScheme.surfaceVariant
+    //     : kEcoGreen.withOpacity(0.8);
+    // final textColor = isReceived
+    //     ? Theme.of(context).colorScheme.onSurfaceVariant
+    //     : Colors.white;
 
-    final bubbleRadius = isReceived
+    // final bubbleRadius = isReceived
+    //     ? const BorderRadius.only(
+    //         topLeft: Radius.circular(16),
+    //         topRight: Radius.circular(16),
+    //         bottomRight: Radius.circular(16),
+    //       )
+    //     : const BorderRadius.only(
+    //         topLeft: Radius.circular(16),
+    //         topRight: Radius.circular(16),
+    //         bottomLeft: Radius.circular(16),
+    //       );
+
+    final align = isSent ? Alignment.centerRight : Alignment.centerLeft;
+    final bubbleColor = isSent
+        ? kEcoGreen // User's message color
+        : Theme.of(context).colorScheme.surfaceVariant;
+    final textColor = isSent
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+
+    final bubbleRadius = isSent
         ? const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
-            bottomRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
           )
         : const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
           );
 
     return GestureDetector(

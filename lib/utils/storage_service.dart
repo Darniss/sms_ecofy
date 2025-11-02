@@ -10,6 +10,9 @@ class StorageService {
   // --- NEW: Key for storing starred message IDs ---
   static const String _starredKey = 'starred_message_ids';
 
+  static const String _pinnedKey = 'pinned_threads';
+  static const String _mutedKey = 'muted_senders';  
+
   Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
   }
@@ -80,4 +83,44 @@ class StorageService {
     final prefs = await _getPrefs();
     return prefs.getStringList(_starredKey) ?? [];
   }
+
+// We use 'sender' as a proxy for 'thread_id'
+  Future<void> setThreadPinned(String sender, bool isPinned) async {
+    final prefs = await _getPrefs();
+    List<String> pinned = prefs.getStringList(_pinnedKey) ?? [];
+    if (isPinned) {
+      if (!pinned.contains(sender)) {
+        pinned.add(sender);
+      }
+    } else {
+      pinned.remove(sender);
+    }
+    await prefs.setStringList(_pinnedKey, pinned);
+  }
+
+  Future<bool> isThreadPinned(String sender) async {
+    final prefs = await _getPrefs();
+    List<String> pinned = prefs.getStringList(_pinnedKey) ?? [];
+    return pinned.contains(sender);
+  }
+
+  // --- NEW: Muting Logic ---
+  Future<void> setSenderMuted(String sender, bool isMuted) async {
+    final prefs = await _getPrefs();
+    List<String> muted = prefs.getStringList(_mutedKey) ?? [];
+    if (isMuted) {
+      if (!muted.contains(sender)) {
+        muted.add(sender);
+      }
+    } else {
+      muted.remove(sender);
+    }
+    await prefs.setStringList(_mutedKey, muted);
+  }
+
+  Future<bool> isSenderMuted(String sender) async {
+    final prefs = await _getPrefs();
+    List<String> muted = prefs.getStringList(_mutedKey) ?? [];
+    return muted.contains(sender);
+  }  
 }
