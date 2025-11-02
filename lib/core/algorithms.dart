@@ -1,4 +1,4 @@
-// import '/data/sample_sms_data.dart';
+import '/data/sample_sms_data.dart';
 
 // // --- Enums ---
 // enum Sentiment { happy, neutral, warning, sad, angry, spammy }
@@ -458,7 +458,8 @@ enum TransactionType {
   alert,
   social,
   none,
-  delivery
+  delivery,
+  eBill
 }
 
 // --- 2. A HELPER CLASS TO HOLD THE ANALYSIS RESULT ---
@@ -472,6 +473,13 @@ class AnalysisResult {
     required this.sentiment,
     required this.transactionType,
   });
+}
+
+class WellnessSummary {
+  final double ecoScore;
+  final int papersSaved;
+
+  WellnessSummary({this.ecoScore = 50.0, this.papersSaved = 0});
 }
 
 class SmsAnalyzer {
@@ -547,7 +555,7 @@ class SmsAnalyzer {
       );
     }
 
-  if (lowerBody.contains('delivery') ||
+    if (lowerBody.contains('delivery') ||
           lowerBody.contains('out for delivery') ||
           lowerBody.contains('arriving today')) {
         return AnalysisResult(
@@ -555,7 +563,18 @@ class SmsAnalyzer {
           sentiment: Sentiment.happy,
           transactionType: TransactionType.delivery,
         );
-      }    
+      }  
+
+    if (lowerBody.contains('e-bill') ||
+        lowerBody.contains('e-statement') ||
+        lowerBody.contains('download your bill') ||
+        lowerBody.contains('.pdf')) {
+      return AnalysisResult(
+        category: SmsCategory.transactions,
+        sentiment: Sentiment.neutral,
+        transactionType: TransactionType.eBill,
+      );
+    }        
     // --- Default: Personal ---
     // If no other rules match, assume it's personal
     return AnalysisResult(
@@ -640,6 +659,29 @@ class SmsAnalyzer {
         return '😐';
     }
   }
+
+static WellnessSummary calculateWellnessSummary(List<SmsMessage> messages) {
+    if (messages.isEmpty) return WellnessSummary();
+
+    int eBillCount = 0;
+    int spamCount = 0;
+
+    for (var msg in messages) {
+      if (msg.transactionType == TransactionType.eBill) {
+        eBillCount++;
+      } else if (msg.category == SmsCategory.promotions) {
+        spamCount++;
+      }
+    }
+
+    // Logic: Start at 50. +5 for every e-bill. -0.1 for every promo.
+    double score = 50.0 + (eBillCount * 5) - (spamCount * 0.1);
+
+    return WellnessSummary(
+      ecoScore: score.clamp(0.0, 100.0), // Ensure score is between 0 and 100
+      papersSaved: eBillCount, // 1 e-bill = 1 paper saved
+    );
+  }  
 
   /// Categorizes the SMS based on its content.
   /// Note: A 'sender' is often an Alphanumeric ID like 'VM-HDFCBK'

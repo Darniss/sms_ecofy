@@ -21,9 +21,17 @@ class ReminderProvider with ChangeNotifier {
   List<ReminderInfo> _allReminders = [];
   bool _isLoading = false;
 
+// --- NEW: Wellness State ---
+  alogo_.WellnessSummary _wellnessSummary = alogo_.WellnessSummary();
+  List<SmsMessage> _ePaperMessages = [];  
+
   // --- Public Getters ---
   bool get isLoading => _isLoading;
   List<SmsMessage> get allMessages => _allMessages;
+
+  double get ecoScore => _wellnessSummary.ecoScore;
+  int get papersSaved => _wellnessSummary.papersSaved;
+  List<SmsMessage> get ePaperMessages => _ePaperMessages;  
 
   // This is the list for "All Reminders" (today + future)
   List<ReminderInfo> get upcomingReminders {
@@ -105,6 +113,20 @@ class ReminderProvider with ChangeNotifier {
 
     _allMessages = loadedMessages;
     _allReminders = _extractReminders(_allMessages);
+
+// --- NEW: PARSE WELLNESS DATA ---
+    _wellnessSummary = alogo_.SmsAnalyzer.calculateWellnessSummary(
+      _allMessages,
+    );
+    _ePaperMessages = _allMessages
+        .where(
+          (msg) =>
+              msg.transactionType == alogo_.TransactionType.eBill ||
+              (msg.body.toLowerCase().contains('http') &&
+                  msg.category == alogo_.SmsCategory.transactions),
+        )
+        .toList();
+
     // Sort by event date (newest first)
     _allReminders.sort((a, b) => b.eventDate.compareTo(a.eventDate));
     _isLoading = false;

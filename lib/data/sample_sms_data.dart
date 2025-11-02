@@ -150,6 +150,37 @@ final List<SmsMessage> sampleSmsList = [
     transactionType: TransactionType.delivery,
   ),
   SmsMessage(
+    id: '10', // --- NEW ---
+    sender: 'HDFC Bank',
+    body:
+        'Your credit card e-statement for Oct 2025 is ready. Download it here: https://www.africau.edu/images/sample.pdf',
+    timestamp: DateTime(2025, 10, 28, 14, 00),
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.neutral,
+    transactionType: TransactionType.eBill,
+  ),
+  SmsMessage(
+    id: '11', // --- NEW ---
+    sender: 'Airtel',
+    body:
+        'Your e-bill for 9876543210 is generated. View and pay your bill here: https://example.com/my-bill',
+    timestamp: DateTime(2025, 10, 20, 11, 00),
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.neutral,
+    transactionType: TransactionType.eBill,
+  ),
+  SmsMessage(
+    id: '12', // --- NEW ---
+    sender: 'Amazon',
+    body:
+        'Your order 123-456 has been delivered. View your e-invoice at https://www.google.com/search?q=invoice',
+    timestamp: DateTime(2025, 11, 1, 19, 00), // Yesterday
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.happy,
+    transactionType:
+        TransactionType.order, // Not an eBill, but still has a link
+  ),  
+  SmsMessage(
     id: '4', // This one from your original list is a future reminder
     sender: 'Airtel',
     body: 'Your bill for Rs. 499 is due on Nov 5.',
