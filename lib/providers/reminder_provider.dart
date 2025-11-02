@@ -19,45 +19,60 @@ class ReminderProvider with ChangeNotifier {
   // --- Private State ---
   List<SmsMessage> _allMessages = [];
   List<ReminderInfo> _allReminders = [];
-  bool _isLoading = false;
 
-// --- NEW: Wellness State ---
+  List<alogo_.FinancialAccount> _bankAccounts = [];
+  List<alogo_.FinancialAccount> _creditCards = [];
+
+  // --- FIX 1: Set isLoading to true by default ---
+  // This ensures the UI shows a loading circle on the first frame
+  // instead of trying to build with null data.
+  bool _isLoading = true;
+
+  // --- FIX 2: Ensure all summary objects are initialized ---
+  // This guarantees they are NEVER null, even before loading.
   alogo_.WellnessSummary _wellnessSummary = alogo_.WellnessSummary();
-  List<SmsMessage> _ePaperMessages = [];  
+  alogo_.PrivacySummary _privacySummary = alogo_.PrivacySummary();
+  // --- END FIXES ---
+
+  List<SmsMessage> _ePaperMessages = [];
+  List<SmsMessage> _spamMessages = [];
+  List<SmsMessage> _subscriptionMessages = [];
 
   // --- Public Getters ---
   bool get isLoading => _isLoading;
   List<SmsMessage> get allMessages => _allMessages;
 
-  double get ecoScore => _wellnessSummary.ecoScore;
-  int get papersSaved => _wellnessSummary.papersSaved;
-  List<SmsMessage> get ePaperMessages => _ePaperMessages;  
-
-  // This is the list for "All Reminders" (today + future)
+  // Reminder Getters
   List<ReminderInfo> get upcomingReminders {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    return _allReminders
-        .where((r) => !r.eventDate.isBefore(today)) // Today or later
-        .toList();
+    return _allReminders.where((r) => !r.eventDate.isBefore(today)).toList();
   }
 
-  // This is the list for "History" (past)
+  List<alogo_.FinancialAccount> get bankAccounts => _bankAccounts;
+  List<alogo_.FinancialAccount> get creditCards => _creditCards;
+
   List<ReminderInfo> get historyReminders {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    return _allReminders
-        .where((r) => r.eventDate.isBefore(today)) // Strictly before today
-        .toList();
+    return _allReminders.where((r) => r.eventDate.isBefore(today)).toList();
   }
 
-  // This is the count for the badge
   int get upcomingReminderCount => upcomingReminders.length;
+
+  // Wellness Getters
+  double get ecoScore => _wellnessSummary.ecoScore;
+  int get papersSaved => _wellnessSummary.papersSaved;
+  List<SmsMessage> get ePaperMessages => _ePaperMessages;
+
+  // Privacy Getters
+  alogo_.PrivacySummary get privacySummary => _privacySummary;
+  List<SmsMessage> get spamMessages => _spamMessages;
+  List<SmsMessage> get subscriptionMessages => _subscriptionMessages;
 
   // --- Data Fetching Method ---
   Future<void> fetchAndParseReminders() async {
-    _isLoading = true;
-    notifyListeners();
+    // We are already loading, so no need to set _isLoading = true here
 
     List<SmsMessage> loadedMessages = [];
     if (EnvironmentConfig.isTestMode) {
@@ -112,9 +127,11 @@ class ReminderProvider with ChangeNotifier {
     }
 
     _allMessages = loadedMessages;
-    _allReminders = _extractReminders(_allMessages);
 
-// --- NEW: PARSE WELLNESS DATA ---
+    // --- PARSE ALL DATA ---
+    _allReminders = _extractReminders(_allMessages);
+    _allReminders.sort((a, b) => b.eventDate.compareTo(a.eventDate));
+
     _wellnessSummary = alogo_.SmsAnalyzer.calculateWellnessSummary(
       _allMessages,
     );
@@ -127,13 +144,24 @@ class ReminderProvider with ChangeNotifier {
         )
         .toList();
 
-    // Sort by event date (newest first)
-    _allReminders.sort((a, b) => b.eventDate.compareTo(a.eventDate));
-    _isLoading = false;
-    notifyListeners();
+    _privacySummary = alogo_.SmsAnalyzer.calculatePrivacySummary(_allMessages);
+    _spamMessages = _allMessages
+        .where((m) => m.transactionType == alogo_.TransactionType.spam)
+        .toList();
+    _subscriptionMessages = _allMessages
+        .where((m) => m.transactionType == alogo_.TransactionType.subscription)
+        .toList();
+    // --- END PARSING ---
+
+    var financialData = alogo_.SmsAnalyzer.parseFinancialAccounts(_allMessages);
+    _bankAccounts = financialData['accounts'] ?? [];
+    _creditCards = financialData['cards'] ?? [];
+
+    _isLoading = false; // <-- Now we are done loading
+    notifyListeners(); // Tell all screens to rebuild with the new data
   }
 
-  // --- Parsing Logic (with Date Fix) ---
+  // --- Reminder Parsing Logic ---
   List<ReminderInfo> _extractReminders(List<SmsMessage> messages) {
     List<ReminderInfo> reminders = [];
     for (var msg in messages) {
@@ -159,32 +187,24 @@ class ReminderProvider with ChangeNotifier {
     return reminders;
   }
 
-  // --- THIS IS THE FIX FOR THE "HISTORY" BUG ---
   DateTime? _parseDateFromText(String body, String regexPattern) {
     final match = RegExp(regexPattern, caseSensitive: false).firstMatch(body);
     if (match == null || match.group(1) == null) return null;
 
     String dateString = match.group(1)!.trim();
 
-    // Get 'now' at the start of the day for fair comparison
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Handle "today"
     if (dateString.toLowerCase() == 'today') return today;
 
     try {
-      // Try full date first (e.g., 05-11-2025)
       return DateFormat('dd-MM-yyyy').parse(dateString);
     } catch (e) {
-      // Try short date (e.g., "Nov 5")
       try {
         var parsedDate = DateFormat('MMM d').parse(dateString);
-        // Construct date with current year
         var eventDate = DateTime(now.year, parsedDate.month, parsedDate.day);
 
-        // If this date is > 1 month in the past (e.g., parsing "Jan 5" in "Nov 2"),
-        // it's probably for next year.
         if (eventDate.isBefore(now.subtract(const Duration(days: 30)))) {
           eventDate = DateTime(now.year + 1, parsedDate.month, parsedDate.day);
         }

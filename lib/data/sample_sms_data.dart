@@ -189,6 +189,36 @@ final List<SmsMessage> sampleSmsList = [
     sentiment: Sentiment.neutral,
     transactionType: TransactionType.bill,
   ),
+  SmsMessage(
+    id: '13',
+    sender: 'VM-HDFCBK',
+    body:
+        'Your A/c xx...1234 has been credited with Rs. 15,000.00. Your new available balance is Rs. 55,000.00.',
+    timestamp: DateTime(2025, 11, 2, 10, 00), // Today (Nov 2)
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.happy,
+    transactionType: TransactionType.bank,
+  ),
+  SmsMessage(
+    id: '14',
+    sender: 'AD-ICICI',
+    body:
+        'Your credit card CC...5678 has a new e-statement. Total amount due: Rs. 8,250.00. Min due: Rs. 500.00.',
+    timestamp: DateTime(2025, 11, 1, 14, 00), // Yesterday
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.warning,
+    transactionType: TransactionType.bill, // This will be re-classified
+  ),
+  SmsMessage(
+    id: '15',
+    sender: 'VM-HDFCBK',
+    body:
+        'Your A/c xx...1234 has been debited by Rs. 5,000.00. Your available balance is Rs. 40,000.00.',
+    timestamp: DateTime(2025, 10, 30, 18, 00), // An older message
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.neutral,
+    transactionType: TransactionType.bank,
+  ),  
 ];
 
 // Sample summary data (your existing data)

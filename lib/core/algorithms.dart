@@ -459,7 +459,9 @@ enum TransactionType {
   social,
   none,
   delivery,
-  eBill
+  eBill,
+  subscription,
+  creditCard
 }
 
 // --- 2. A HELPER CLASS TO HOLD THE ANALYSIS RESULT ---
@@ -482,6 +484,34 @@ class WellnessSummary {
   WellnessSummary({this.ecoScore = 50.0, this.papersSaved = 0});
 }
 
+
+class PrivacySummary {
+  final double pimScore; // Privacy Insight Meter (0-100, higher is riskier)
+  final double trustScore; // Message Trust Score (0-100, higher is better)
+
+  PrivacySummary({this.pimScore = 0.0, this.trustScore = 100.0});
+}
+
+
+// --- NEW: FinancialAccount Class ---
+class FinancialAccount {
+  final String id; // Unique ID (e.g., "HDFCBK-1234")
+  final String name; // e.g., "HDFC Bank"
+  final String number; // e.g., "xx...1234"
+  final double balance; // e.g., 55000.00
+  final DateTime lastUpdated;
+  final TransactionType type; // bank or creditCard
+
+  FinancialAccount({
+    required this.id,
+    required this.name,
+    required this.number,
+    required this.balance,
+    required this.lastUpdated,
+    required this.type,
+  });
+}
+
 class SmsAnalyzer {
   //
   // --- THIS IS THE FIX ---
@@ -490,6 +520,31 @@ class SmsAnalyzer {
   //
   AnalysisResult analyze(String body) {
     String lowerBody = body.toLowerCase();
+
+// Rule: Spam
+    if (lowerBody.contains('congratulations') ||
+        lowerBody.contains('you have won') ||
+        lowerBody.contains('lottery') ||
+        lowerBody.contains('claim now') ||
+        lowerBody.contains('click this link')) {
+      return AnalysisResult(
+        category: SmsCategory.promotions,
+        sentiment: Sentiment.spammy,
+        transactionType: TransactionType.spam,
+      );
+    }
+
+
+// --- NEW: Subscription Rule ---
+    if (lowerBody.contains('unsubscribe') ||
+        lowerBody.contains('pre-approvedt') ||
+        lowerBody.contains('no longer wish to receive')) {
+      return AnalysisResult(
+        category: SmsCategory.promotions,
+        sentiment: Sentiment.neutral,
+        transactionType: TransactionType.subscription,
+      );
+    }    
 
     // Rule 1: OTP
     if (lowerBody.contains('otp') ||
@@ -501,6 +556,24 @@ class SmsAnalyzer {
         transactionType: TransactionType.otp,
       );
     }
+
+// Rule: Bank vs. Credit Card
+    if (lowerBody.contains('credit card') || lowerBody.contains(' cc ')) {
+      return AnalysisResult(
+        category: SmsCategory.transactions,
+        sentiment: Sentiment.neutral,
+        transactionType: TransactionType.creditCard,
+      );
+    }
+    if (lowerBody.contains('a/c') ||
+        lowerBody.contains('account') ||
+        lowerBody.contains('bank')) {
+      return AnalysisResult(
+        category: SmsCategory.transactions,
+        sentiment: Sentiment.neutral,
+        transactionType: TransactionType.bank,
+      );
+    }    
 
     // Rule 2: Order / Shipping
     if (lowerBody.contains('order') ||
@@ -682,6 +755,151 @@ static WellnessSummary calculateWellnessSummary(List<SmsMessage> messages) {
       papersSaved: eBillCount, // 1 e-bill = 1 paper saved
     );
   }  
+
+  /// Calculates PIM and Trust Score
+  static PrivacySummary calculatePrivacySummary(List<SmsMessage> messages) {
+    if (messages.isEmpty) return PrivacySummary();
+
+    int totalMessages = messages.length;
+    int spamCount = 0;
+    int pimRiskPoints = 0;
+
+    for (var msg in messages) {
+      if (msg.transactionType == TransactionType.spam) {
+        spamCount++;
+      }
+      // PIM: Give "risk points" for messages containing sensitive data
+      if (msg.transactionType == TransactionType.otp) {
+        pimRiskPoints += 3; // High risk
+      }
+      if (msg.transactionType == TransactionType.bank) {
+        pimRiskPoints += 1; // Medium risk
+      }
+      if (msg.body.toLowerCase().contains('password')) {
+        pimRiskPoints += 5; // Very high risk
+      }
+    }
+
+    // Trust Score: 0-100, (non-spam / total)
+    double trustScore = ((totalMessages - spamCount) / totalMessages) * 100.0;
+
+    // PIM Score: 0-100, (risk points / total)
+    // This is a "risk" score. A higher number is WORSE.
+    double pimScore = (pimRiskPoints / totalMessages) * 100.0;
+
+    return PrivacySummary(
+      trustScore: trustScore.clamp(0.0, 100.0),
+      pimScore: pimScore.clamp(0.0, 100.0), // Higher = Riskier
+    );
+  }
+
+
+/// Parses all SMS messages and returns a list of unique accounts
+  static Map<String, List<FinancialAccount>> parseFinancialAccounts(
+    List<SmsMessage> messages,
+  ) {
+    final Map<String, FinancialAccount> latestAccounts = {};
+
+    // Filter for messages that are bank or credit card
+    var financialMessages = messages.where(
+      (m) =>
+          m.transactionType == TransactionType.bank ||
+          m.transactionType == TransactionType.creditCard,
+    );
+
+    for (var msg in financialMessages) {
+      String? accNumber = _extractAccountNumber(msg.body);
+      double? balance = _extractBalance(msg.body);
+
+      // We need an account number and a balance to proceed
+      if (accNumber == null || balance == null) continue;
+
+      String id = "${msg.sender}-$accNumber";
+      String name = msg.sender.replaceAll(
+        RegExp(r'^[A-Z]{2}-'),
+        '',
+      ); // Clean up "VM-HDFCBK" to "HDFCBK"
+
+      // Check if this account is already in our map
+      if (!latestAccounts.containsKey(id) ||
+          msg.timestamp.isAfter(latestAccounts[id]!.lastUpdated)) {
+        // If it's new, or if this message is *newer* than the one we have, update it.
+        latestAccounts[id] = FinancialAccount(
+          id: id,
+          name: name,
+          number: accNumber,
+          balance: balance,
+          lastUpdated: msg.timestamp,
+          type: msg.transactionType,
+        );
+      }
+    }
+
+    // Now, split the map into two lists
+    List<FinancialAccount> bankAccounts = [];
+    List<FinancialAccount> creditCards = [];
+
+    for (var account in latestAccounts.values) {
+      if (account.type == TransactionType.bank) {
+        bankAccounts.add(account);
+      } else {
+        creditCards.add(account);
+      }
+    }
+
+    return {'accounts': bankAccounts, 'cards': creditCards};
+  }
+
+  /// Helper to extract account number (e.g., xx...1234)
+  static String? _extractAccountNumber(String body) {
+    // Looks for "a/c", "acct", "card", "cc" followed by "xx" or "..." and 4 digits
+    final match = RegExp(
+      r'(a/c|acct|card|cc).*(xx|\.+)(\d{4})',
+      caseSensitive: false,
+    ).firstMatch(body);
+
+    if (match != null) {
+      // Return the "xx...1234" part
+      return "xx...${match.group(3)}";
+    }
+    return null;
+  }
+
+  /// Helper to extract balance (e.g., Rs. 55,000.00)
+  static double? _extractBalance(String body) {
+    // Looks for "avbl bal", "balance is", "bal:", etc.
+    final match = RegExp(
+      r'(avbl bal|balance is|bal:|balance:).*(rs\.?|inr)\s*([\d,]+\.?\d*)',
+      caseSensitive: false,
+    ).firstMatch(body);
+
+    if (match != null && match.group(3) != null) {
+      try {
+        // Remove commas and parse
+        return double.parse(match.group(3)!.replaceAll(',', ''));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // --- Fallback for Credit Cards ---
+    // Looks for "total due: Rs. 5,000"
+    final dueMatch = RegExp(
+      r'(total (?:amount )?due:).*(rs\.?|inr)\s*([\d,]+\.?\d*)',
+      caseSensitive: false,
+    ).firstMatch(body);
+
+    if (dueMatch != null && dueMatch.group(3) != null) {
+      try {
+        return double.parse(dueMatch.group(3)!.replaceAll(',', ''));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
 
   /// Categorizes the SMS based on its content.
   /// Note: A 'sender' is often an Alphanumeric ID like 'VM-HDFCBK'
