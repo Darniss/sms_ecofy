@@ -112,7 +112,6 @@ Your personal shield against spammers:
 
 ---
 
-
 ## 🛠️ Installation  
 
 ### **Prerequisites**  
@@ -132,6 +131,13 @@ Ensure you have the following installed:
 3. **Run the APP**
    ```bash
    flutter run
+
+## App's Permissions
+Ensure you to provide allow to the permisions asked after installation
+- 🔔 Notifications
+- 📁 Storage
+- 📞 Contacts
+- 🚀 Launch Apps
 
 ## 💾 Decentralized Storage with IPFS
 
