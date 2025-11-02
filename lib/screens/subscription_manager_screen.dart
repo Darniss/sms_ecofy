@@ -1,5 +1,3 @@
-// 𗗂 File: screens/subscription_manager_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

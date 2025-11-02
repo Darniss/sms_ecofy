@@ -1,10 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'dart:async';
-// import '/screens/home_screen.dart';
-// import '/screens/permission_screen.dart';
-// import '/utils/constants.dart';
-// import '/utils/storage_service.dart';
-// import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '/screens/permission_screen.dart';
