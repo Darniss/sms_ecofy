@@ -2,7 +2,6 @@
 ### _Smarter, Greener & Emotionally Intelligent SMS Experience_
 
 ![Flutter](https://img.shields.io/badge/Made%20with-Flutter-blue?logo=flutter)
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Build](https://img.shields.io/badge/Build-Passing-brightgreen)
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey)
 
@@ -10,17 +9,23 @@
 
 ## 📱 About SMS ECOFY
 
-**SMS ECOFY** is a simple, elegant, and intelligent app that helps you **organize and summarize your SMS messages**.  
-No more endless scrolling or switching between apps — SMS ECOFY simplifies your inbox with **AI-driven categorization, smart insights, and eco-friendly tracking.**
+**SMS ECOFY** is a modern, intelligent, and eco-conscious messaging app that **organizes, summarizes, and analyzes your SMS messages** in one beautifully designed place.  
 
-> “Save time, save trees, and feel the vibes 🌱💬”
+No more chaos in your inbox — SMS ECOFY brings structure, emotion, and environmental awareness into your daily messaging.
+
+✨ **What Makes SMS ECOFY Unique**
+- 🌱 **Eco Saving:** Tracks how many paper bills you’ve replaced with SMS and gives you an Eco Score.  
+- 😊 **Smart Analysis:** Detects the emotional tone of messages and represents it visually using expressive emojis.  
+- 🚫 **Spam Protector:** Protects users from known spammers by leveraging community-based spam tracking.  
+
+> Save time, understand emotions, and make your digital life greener. 🌿
 
 ---
 
-## 🚀 Smart Features
+## 🚀 Core Features
 
-### 🧠 Smart Monitoring
-Automatically detects and classifies incoming SMS into categories such as:
+### 🧠 Smart Monitoring  
+Automatically detects and categorizes your SMS messages into:
 - 🚫 **Spams**
 - ⚠️ **Alerts**
 - 🔐 **OTPs**
@@ -31,75 +36,63 @@ Automatically detects and classifies incoming SMS into categories such as:
 ---
 
 ### ⏰ Remainders  
-Stay on schedule effortlessly:
-- Tracks **calls, meetings, to-dos, and daily plans**
-- Sends **timely reminders** for all your important activities  
+Never miss a thing:  
+- Tracks your **calls, meetings, day plans, and to-do lists**  
+- Sends **reminders** right on time  
 
 ---
 
 ### 💰 Finance Tracker  
-Your personal finance assistant right inside your SMS app:  
-- Detects **spendings and savings** from messages  
-- Suggests tips to improve your **financial wellbeing**
+Stay financially smart:  
+- Detects **spendings and savings** from SMS data  
+- Suggests **ways to improve financial wellbeing**
 
 ---
 
 ### 🧘‍♀️ Digital Wellbeing  
-Focus more, scroll less.  
-- Reduces unnecessary app usage  
-- Displays all key info at a glance — no app-hopping needed  
+Keep your mind and phone uncluttered:  
+- Reduces app-hopping by showing all key info in one place  
+- Encourages **mindful phone use**
 
 ---
 
 ### 📅 Date-Filtered SMS  
-Search messages faster:  
-- Filter messages by date  
-- Perfect for quickly finding **bills, OTPs, or order confirmations**
+Find messages faster:  
+- Filter by date to locate **bills, OTPs, or receipts** instantly  
+- Saves significant time searching through your inbox  
 
 ---
 
-## 🌍 Unique Features
+## 🧠 Unique Features (Detailed)
 
 ### 🌱 Eco Saving  
-Go green while you text 💚  
-- Tracks how many **paper bills** you avoided through SMS  
-- Gives you an **Eco Score** and rewarding feedback  
+Measure your **environmental contribution** by tracking how many paper bills you’ve replaced with SMS.  
+Receive an **Eco Score** and satisfying visual feedback — every small digital action counts 🌍.  
 
 ---
 
 ### 😊 Smart Analysis  
-Emotionally aware message analysis powered by AI:  
-- Reads your messages and detects the **emotional tone**  
-- Example:  
-  > “I’m pregnant!” → 🥳 **Happy & Positive Vibe!**  
+Reads your messages and conveys the **emotional sentiment** in a fun and humanized way.  
+Example:  
+> “I’m pregnant!” → 🥳 _Happy & Positive Vibe!_  
 
-Adds a human touch to your inbox — understand emotions at a glance.  
+This helps you instantly understand the emotional context of messages and respond empathetically.
 
 ---
 
 ### 🚫 Spam Protector  
-Never fall for spammers again:  
-- Crowdsourced spam protection  
-- Warns and blocks known spammers in real time  
+Your personal shield against spammers:  
+- Learns from reported spam behavior across users  
+- Warns or blocks spammers automatically  
+- Keeps your inbox clean and safe  
 
 ---
 
 ## 💬 Normal Features
 
-SMS ECOFY also includes all the features of a traditional SMS app:  
-- 📩 Send & receive SMS  
+- 📩 Send and receive SMS messages  
 - 🖼️ Send multimedia messages  
-- 💬 Clean, modern, and minimal interface  
-
----
-
-## 🌟 Why Choose SMS ECOFY?
-
-✅ Smart, clutter-free inbox  
-✅ Emotionally aware responses  
-✅ Eco-friendly insights  
-✅ Real-time spam protection  
-✅ Smooth & elegant Flutter UI  
+- 💬 Sleek and minimal user interface  
 
 ---
 
@@ -108,13 +101,16 @@ SMS ECOFY also includes all the features of a traditional SMS app:
 | Component | Technology |
 |------------|-------------|
 | **Frontend** | Flutter (Dart) |
-| **Storage** | Local DB / IPFS-ready |
+| **Backend** | Firebase / Node.js |
+| **Storage** | Local Database / IPFS-ready |
 | **Platform** | Android & iOS |
 
 ---
 
-## 🧩 Installation
+## ⚙️ Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/sms_ecofy.git
+Follow these simple steps to get started:
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/yourusername/sms_ecofy.git
