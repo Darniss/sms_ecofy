@@ -127,7 +127,6 @@ Ensure you have the following installed:
 3. **Run the APP**
    ```bash
    flutter run
-   This will build and run your app.
 
 ## Stay Connected
 
