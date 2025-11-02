@@ -4,7 +4,7 @@ import '/config/env_config.dart';
 class TimeHelper {
   // Use a fixed date for reliable testing.
 static final _now = EnvironmentConfig.isTestMode
-      ? DateTime(2025, 11, 1) // This is a Saturday
+      ? DateTime(2025, 11, 2) // This is a Saturday
       : DateTime.now(); // Use this in production
 
 static String formatTimestamp(DateTime timestamp) {
