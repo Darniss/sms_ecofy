@@ -458,6 +458,7 @@ enum TransactionType {
   alert,
   social,
   none,
+  delivery
 }
 
 // --- 2. A HELPER CLASS TO HOLD THE ANALYSIS RESULT ---
@@ -545,6 +546,16 @@ class SmsAnalyzer {
         transactionType: TransactionType.bank,
       );
     }
+
+  if (lowerBody.contains('delivery') ||
+          lowerBody.contains('out for delivery') ||
+          lowerBody.contains('arriving today')) {
+        return AnalysisResult(
+          category: SmsCategory.transactions,
+          sentiment: Sentiment.happy,
+          transactionType: TransactionType.delivery,
+        );
+      }    
     // --- Default: Personal ---
     // If no other rules match, assume it's personal
     return AnalysisResult(

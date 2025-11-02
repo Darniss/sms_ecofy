@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/screens/splash_screen.dart';
 import 'services/sms_service.dart';
 import '/utils/theme.dart';
+import '/providers/reminder_provider.dart';
 
 void main() async {
   // Ensure bindings are initialized
@@ -12,13 +13,29 @@ void main() async {
   // We can still initialize prefs here for other services if needed
   await SharedPreferences.getInstance();
 
+  // --- THIS IS THE MODIFICATION ---
+
+  // We are replacing 'ChangeNotifierProvider' with 'MultiProvider'
+  // to allow us to provide BOTH ThemeProvider and ReminderProvider.
   runApp(
-    ChangeNotifierProvider(
-      // FIX 2: Changed to use the no-argument constructor
-      create: (context) => ThemeProvider(),
-      child: const SmsEcofyApp(),
+    MultiProvider(
+      providers: [
+        // Your existing provider for Theme (Light/Dark mode)
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+
+        // --- NEW ---
+        // Your new provider for Reminders.
+        // We call '..fetchAndParseReminders()' immediately
+        // so the app starts loading reminders right away.
+        ChangeNotifierProvider(
+          create: (context) => ReminderProvider()..fetchAndParseReminders(),
+        ),
+        // --- END NEW ---
+      ],
+      child: const SmsEcofyApp(), // Your app widget
     ),
   );
+  // --- END OF MODIFICATION ---
 }
 
 class SmsEcofyApp extends StatelessWidget {
@@ -27,6 +44,7 @@ class SmsEcofyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Consume the ThemeProvider
+    // This part does NOT need to change. It still works perfectly.
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
@@ -34,7 +52,6 @@ class SmsEcofyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
 
           // Use provider for theme settings
-          // FIX 1: Accessed lightTheme and darkTheme directly
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeProvider.themeMode,

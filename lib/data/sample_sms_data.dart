@@ -4,6 +4,7 @@ import '/core/algorithms.dart';
 class SmsMessage {
   // --- NEW: Added 'id' and 'isStarred' ---
   final String id;
+  final bool isSent;
   final String sender;
   final String body;
   final DateTime timestamp;
@@ -18,6 +19,7 @@ class SmsMessage {
     required this.body,
     required this.timestamp,
     required this.category,
+    this.isSent = false,
     required this.sentiment,
     required this.transactionType,
     this.isStarred = false, // --- NEW ---
@@ -136,6 +138,25 @@ final List<SmsMessage> sampleSmsList = [
     category: SmsCategory.transactions,
     sentiment: Sentiment.neutral,
     transactionType: TransactionType.otp,
+  ),
+  SmsMessage(
+    id: '9', // --- NEW ---
+    sender: 'BlueDart',
+    body:
+        'Your package 12345 is out for delivery and will arrive today, Nov 2.',
+    timestamp: DateTime(2025, 11, 2, 9, 00), // Today (Nov 2)
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.happy,
+    transactionType: TransactionType.delivery,
+  ),
+  SmsMessage(
+    id: '4', // This one from your original list is a future reminder
+    sender: 'Airtel',
+    body: 'Your bill for Rs. 499 is due on Nov 5.',
+    timestamp: DateTime(2025, 10, 31, 10, 00), // Yesterday (Oct 31)
+    category: SmsCategory.transactions,
+    sentiment: Sentiment.neutral,
+    transactionType: TransactionType.bill,
   ),
 ];
 

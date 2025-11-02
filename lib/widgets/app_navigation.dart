@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; 
+import '/providers/reminder_provider.dart'; 
+
 import '/screens/home_screen.dart';
 import '/screens/finance_screen.dart';
 import '/screens/reminder_screen.dart';
@@ -33,30 +36,75 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- NEW: Watch the provider for changes ---
+    // This line listens to your ReminderProvider.
+    // When the count changes, this widget will rebuild.
+    final int reminderCount = context
+        .watch<ReminderProvider>()
+        .upcomingReminderCount;
+    // --- END NEW ---
+
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
 
-      // --- FIX: Removed Container with gradient. Using theme-based FAB ---
+      // --- MODIFIED: The FloatingActionButton ---
       floatingActionButton: FloatingActionButton(
         heroTag: 'mainNavFab',
         onPressed: () => _onItemTapped(2),
         backgroundColor: kEcoGreen, // Use theme color
         foregroundColor: Colors.white, // Use theme color
-        child: Icon(
-          _selectedIndex == 2 ? AppIcons.reminder : AppIcons.reminderOutlined,
-          size: 30,
+        // --- NEW: Wrap the Icon in a Stack to add a badge ---
+        child: Stack(
+          clipBehavior: Clip.none, // Allows the badge to be outside the FAB
+          children: [
+            Icon(
+              _selectedIndex == 2
+                  ? AppIcons.reminder
+                  : AppIcons.reminderOutlined,
+              size: 30,
+            ),
+
+            // --- NEW: This is the Badge ---
+            if (reminderCount > 0)
+              Positioned(
+                top: -8, // Adjust position as needed
+                right: -8, // Adjust position as needed
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 20,
+                    minHeight: 20,
+                  ),
+                  child: Text(
+                    '$reminderCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            // --- END NEW ---
+          ],
         ),
+        // --- END MODIFICATION ---
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // --- NEW: Bottom App Bar with Notch ---
+      // --- This BottomAppBar is UNCHANGED ---
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 65.0, // Define a consistent height
-          // --- FIX: Using a single Row with Expanded for stable alignment ---
+          height: 65.0,
           child: Row(
             children: <Widget>[
               Expanded(
@@ -75,10 +123,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   index: 1,
                 ),
               ),
-              // --- This SizedBox creates the stable gap for the notch ---
-              // A standard FAB is 56px, notchMargin is 8px*2 = 16px.
-              // 56 + 16 = 72px.
-              const SizedBox(width: 72.0),
+              const SizedBox(width: 72.0), // The gap
               Expanded(
                 child: _buildNavItem(
                   icon: AppIcons.wellnessOutlined,
@@ -102,7 +147,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  // --- UPDATED: Helper widget for navigation items ---
+  // --- This helper method is UNCHANGED ---
   Widget _buildNavItem({
     required IconData icon,
     required IconData activeIcon,
@@ -114,18 +159,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final Color inactiveColor =
         Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
 
-    // --- FIX: Using MaterialButton for highlight box and shape ---
     return MaterialButton(
       minWidth: 40,
       onPressed: () => _onItemTapped(index),
-      padding: const EdgeInsets.symmetric(vertical: 8.0), // Padding for box
-      // --- This creates the "box" highlight ---
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       color: isSelected ? activeColor.withOpacity(0.1) : Colors.transparent,
       elevation: 0,
       highlightElevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0), // Rounded box
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

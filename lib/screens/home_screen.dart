@@ -93,6 +93,7 @@ if (EnvironmentConfig.isTestMode) {
           telephony.SmsColumn.ADDRESS, 
           telephony.SmsColumn.BODY,
           telephony.SmsColumn.DATE, 
+          telephony.SmsColumn.TYPE,
         ],
         sortOrder: [
           telephony.OrderBy(
@@ -114,6 +115,16 @@ if (EnvironmentConfig.isTestMode) {
           continue;
         }
 
+        final category = alogo_.SmsAnalyzer.categorizeSms(
+          liveMsg.address!,
+          liveMsg.body!,
+        );
+        final sentiment = alogo_.SmsAnalyzer.analyzeSentiment(liveMsg.body!);
+        final transType = alogo_.SmsAnalyzer.getTransactionType(
+          liveMsg.address!,
+          liveMsg.body!,
+        );        
+
         // 4. Analyze the live SMS body
         final analysisResult = analyzer.analyze(liveMsg.body!);
 
@@ -127,6 +138,7 @@ if (EnvironmentConfig.isTestMode) {
             category: analysisResult.category,
             sentiment: analysisResult.sentiment,
             transactionType: analysisResult.transactionType,
+            isSent: liveMsg.type == telephony.SmsType.MESSAGE_TYPE_SENT,
             isStarred: false, // Default to false
           ),
         );

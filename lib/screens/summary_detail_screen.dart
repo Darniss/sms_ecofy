@@ -3,7 +3,8 @@ import '/utils/time_helper.dart';
 import 'package:flutter/material.dart';
 import '/data/sample_sms_data.dart'; // For SmsMessage
 import '/widgets/summary_cards_section.dart'; // For SummaryCardData
-
+import '/screens/compose_sms_screen.dart';
+import '/screens/chat_screen.dart';
 class SummaryDetailScreen extends StatefulWidget {
   final SummaryCardData card;
   const SummaryDetailScreen({super.key, required this.card});
@@ -75,6 +76,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen> {
 
   Widget _buildMessageList() {
     // Build your ListView or GridView here
+    List<SmsMessage> _allMessages = sampleSmsList;
     return ListView.builder(
       itemCount: _filteredMessages.length,
       itemBuilder: (context, index) {
@@ -86,10 +88,26 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen> {
             TimeHelper.formatTimestamp(message.timestamp),
           ), // You'll need a TimeHelper
           onTap: () {
-            // NEXT STEP: Navigate to ChatScreen
-            // Navigator.of(context).push(MaterialPageRoute(
-            //   builder: (context) => ChatScreen(sender: message.sender),
-            // ));
+            // --- THIS IS THE NEW LOGIC ---
+            // 1. Get all messages for this thread/sender
+            List<SmsMessage> threadMessages = _allMessages
+                .where((m) => m.sender == message.sender)
+                .toList();
+
+            // 2. Sort them by time, OLDEST to NEWEST
+            threadMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+            // 3. Navigate, passing the ID of the message to highlight
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ChatScreen(
+                  sender: message.sender,
+                  messages: threadMessages,
+                  messageToHighlightId: message.id, // <-- PASS THE ID
+                ),
+              ),
+            );
+            // --- END NEW LOGIC ---
           },
         );
       },
