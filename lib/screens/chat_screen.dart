@@ -15,7 +15,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   bool _isSelectionMode = false;
-  Set<SmsMessage> _selectedMessages = {};
+  final Set<SmsMessage> _selectedMessages = {};
 
   // --- Permission & Call Logic ---
   Future<void> _makeCall() async {

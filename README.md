@@ -1,4 +1,4 @@
-# SMS Ecofy
+# SMS Ecofy - Greener, Smarter and Safer inbox for Everyone
 
 A new Flutter project.
 

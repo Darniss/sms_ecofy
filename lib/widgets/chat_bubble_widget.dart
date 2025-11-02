@@ -25,7 +25,7 @@ class ChatBubbleWidget extends StatelessWidget {
 
     final align = isReceived ? Alignment.centerLeft : Alignment.centerRight;
     final bubbleColor = isReceived
-        ? Theme.of(context).colorScheme.surfaceVariant
+        ? Theme.of(context).colorScheme.surfaceContainerHighest
         : kEcoGreen.withOpacity(0.8);
     final textColor = isReceived
         ? Theme.of(context).colorScheme.onSurfaceVariant

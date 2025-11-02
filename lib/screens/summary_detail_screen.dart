@@ -14,7 +14,7 @@ class SummaryDetailScreen extends StatefulWidget {
 
 class _SummaryDetailScreenState extends State<SummaryDetailScreen> {
   List<SmsMessage> _filteredMessages = [];
-  String _layoutType = 'list'; // Default layout
+  final String _layoutType = 'list'; // Default layout
 
   @override
   void initState() {

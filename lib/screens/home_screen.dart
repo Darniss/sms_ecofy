@@ -731,16 +731,21 @@ if (EnvironmentConfig.isTestMode) {
   Widget _buildSlidableMessageListItem(SmsMessage message, int index) {
     IconData getIconForSender(String sender) {
       String s = sender.toLowerCase();
-      if (s.contains('hdfc') || s.contains('icici') || s.contains('axis'))
+      if (s.contains('hdfc') || s.contains('icici') || s.contains('axis')) {
         return AppIcons.finance;
-      if (s.contains('amazon') || s.contains('flipkart'))
+      }
+      if (s.contains('amazon') || s.contains('flipkart')) {
         return AppIcons.orders;
-      if (s.contains('indigo') || s.contains('makemytrip'))
+      }
+      if (s.contains('indigo') || s.contains('makemytrip')) {
         return AppIcons.travel;
-      if (s.contains('airtel') || s.contains('jio') || s.contains('vi'))
+      }
+      if (s.contains('airtel') || s.contains('jio') || s.contains('vi')) {
         return Icons.receipt_long_rounded;
-      if (s.contains('google') || s.contains('facebook'))
+      }
+      if (s.contains('google') || s.contains('facebook')) {
         return Icons.password_rounded;
+      }
 
       switch (message.transactionType) {
         // ... (your switch case logic)
@@ -802,7 +807,7 @@ if (EnvironmentConfig.isTestMode) {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
         leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.background,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           child: Icon(getIconForSender(message.sender), color: kEcoGreen),
         ),
         title: Text(
