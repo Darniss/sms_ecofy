@@ -78,10 +78,7 @@ Receive an **Eco Score** and satisfying visual feedback — every small digital 
 ---
 
 ### 😊 Smart Analysis  
-Reads your messages and conveys the **emotional sentiment** in a fun and humanized way.  
-Example:  
-> “I’m pregnant!” → 🥳 _Happy & Positive Vibe!_  
-
+Reads your messages and conveys the **emotional sentiment** in a humanized way.  
 This helps you instantly understand the emotional context of messages and respond empathetically.
 
 ---
