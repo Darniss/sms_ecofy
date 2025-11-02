@@ -38,7 +38,7 @@ dependencies:
   # contacts_service: ^0.6.3      # For reading contacts (for compose screen)
   flutter_contacts: ^1.1.7+1
   telephony: ^0.2.0             # For sending SMS  
-  sms_advanced: ^1.1.0          # For reading SMS (only works on Android)
+  sms_advanced: ^1.1.0          # For reading SMS 
   google_fonts: ^6.1.0          # import 'package:google_fonts/google_fonts.dart';
   provider: ^6.1.1              # For state management (Theme)
   fl_chart: ^0.64.0             # For Pie Chart view 
